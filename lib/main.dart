@@ -6,20 +6,58 @@ import 'package:flutter/material.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await FirebaseAuth.instance.signInAnonymously();
-  runApp(const IdleWatchApp());
+
+  String? startupError;
+  try {
+    await Firebase.initializeApp();
+    await FirebaseAuth.instance.signInAnonymously();
+  } on Exception catch (error) {
+    startupError = error.toString();
+  }
+
+  runApp(IdleWatchApp(startupError: startupError));
 }
 
 class IdleWatchApp extends StatelessWidget {
-  const IdleWatchApp({super.key});
+  const IdleWatchApp({super.key, this.startupError});
+
+  final String? startupError;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IdleWatch',
       theme: ThemeData.dark(),
-      home: const DashboardPage(),
+      home: startupError == null
+          ? const DashboardPage()
+          : SetupErrorPage(message: startupError!),
+    );
+  }
+}
+
+class SetupErrorPage extends StatelessWidget {
+  const SetupErrorPage({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('IdleWatch setup required')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Firebase initialization failed. Complete Firebase setup from '
+              'README.md and run again.',
+            ),
+            const SizedBox(height: 12),
+            Text(message, style: const TextStyle(color: Colors.amberAccent)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -29,7 +67,7 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final q = FirebaseFirestore.instance
+    final query = FirebaseFirestore.instance
         .collection('metrics')
         .orderBy('ts', descending: true)
         .limit(120);
@@ -37,17 +75,22 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('IdleWatch')),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: q.snapshots(),
+        stream: query.snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-          final docs = snapshot.data!.docs.reversed.toList();
-          final cpu = <FlSpot>[];
-          final mem = <FlSpot>[];
-          for (var i = 0; i < docs.length; i++) {
-            final d = docs[i].data();
-            cpu.add(FlSpot(i.toDouble(), (d['cpuPct'] ?? 0).toDouble()));
-            mem.add(FlSpot(i.toDouble(), (d['memPct'] ?? 0).toDouble()));
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
           }
+
+          final docs = snapshot.data!.docs.reversed.toList();
+          final cpuSpots = <FlSpot>[];
+          final memSpots = <FlSpot>[];
+
+          for (var index = 0; index < docs.length; index++) {
+            final data = docs[index].data();
+            cpuSpots.add(FlSpot(index.toDouble(), _asDouble(data['cpuPct'])));
+            memSpots.add(FlSpot(index.toDouble(), _asDouble(data['memPct'])));
+          }
+
           return Padding(
             padding: const EdgeInsets.all(16),
             child: LineChart(
@@ -55,8 +98,16 @@ class DashboardPage extends StatelessWidget {
                 minY: 0,
                 maxY: 100,
                 lineBarsData: [
-                  LineChartBarData(spots: cpu, isCurved: true, color: Colors.greenAccent),
-                  LineChartBarData(spots: mem, isCurved: true, color: Colors.blueAccent),
+                  LineChartBarData(
+                    spots: cpuSpots,
+                    isCurved: true,
+                    color: Colors.greenAccent,
+                  ),
+                  LineChartBarData(
+                    spots: memSpots,
+                    isCurved: true,
+                    color: Colors.blueAccent,
+                  ),
                 ],
               ),
             ),
@@ -64,5 +115,12 @@ class DashboardPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  double _asDouble(Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return 0;
   }
 }
