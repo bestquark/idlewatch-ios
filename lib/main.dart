@@ -204,135 +204,13 @@ class _AuthGatePageState extends State<AuthGatePage> {
   }
 }
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   static const int _secondsPerDay = 24 * 60 * 60;
 
   @override
-  Widget build(BuildContext context) {
-    final query = FirebaseFirestore.instance
-        .collection('metrics')
-        .orderBy('ts', descending: true)
-        .limit(120);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('IdleWatch')),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: query.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _ErrorState(message: snapshot.error.toString());
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final docs = snapshot.data!.docs.reversed.toList();
-          if (docs.isEmpty) {
-            return const _EmptyState();
-          }
-
-          final cpuSpots = <FlSpot>[];
-          final memSpots = <FlSpot>[];
-
-          for (var index = 0; index < docs.length; index++) {
-            final data = docs[index].data();
-            cpuSpots.add(FlSpot(index.toDouble(), _asDouble(data['cpuPct'])));
-            memSpots.add(FlSpot(index.toDouble(), _asDouble(data['memPct'])));
-          }
-
-          final latest = docs.last.data();
-          final latestTs = _asDateTime(latest['ts']);
-          final activity = _buildActivityBreakdown(docs);
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _MetricChip(
-                    label: 'CPU',
-                    value: '${_asDouble(latest['cpuPct']).toStringAsFixed(1)}%',
-                  ),
-                  _MetricChip(
-                    label: 'Memory',
-                    value: '${_asDouble(latest['memPct']).toStringAsFixed(1)}%',
-                  ),
-                  _MetricChip(
-                    label: 'Tokens/min',
-                    value:
-                        '${_asDouble(latest['tokensPerMin']).toStringAsFixed(0)}',
-                  ),
-                  _MetricChip(
-                    label: 'Host',
-                    value: '${latest['host'] ?? 'unknown'}',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Last update: ${latestTs != null ? _formatTime(latestTs) : 'unknown'}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 20),
-              _ActivityPieCard(activity: activity),
-              const SizedBox(height: 20),
-              const _ChartLegend(),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 280,
-                child: LineChart(
-                  LineChartData(
-                    minY: 0,
-                    maxY: 100,
-                    gridData: const FlGridData(show: true),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    titlesData: const FlTitlesData(
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: true, reservedSize: 34),
-                      ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: cpuSpots,
-                        isCurved: true,
-                        barWidth: 2.5,
-                        color: Colors.greenAccent,
-                        dotData: const FlDotData(show: false),
-                      ),
-                      LineChartBarData(
-                        spots: memSpots,
-                        isCurved: true,
-                        barWidth: 2.5,
-                        color: Colors.blueAccent,
-                        dotData: const FlDotData(show: false),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+  State<DashboardPage> createState() => _DashboardPageState();
 
   static _ActivityBreakdown _buildActivityBreakdown(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
@@ -523,6 +401,13 @@ class DashboardPage extends StatelessWidget {
     return 0;
   }
 
+  static double? _asNullableDouble(Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return null;
+  }
+
   static DateTime? _asDateTime(Object? value) {
     if (value is int) {
       if (value > 1000000000000) {
@@ -550,6 +435,13 @@ class DashboardPage extends StatelessWidget {
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$minute $suffix';
   }
 
+  static String _formatClock(DateTime dt) {
+    final local = dt.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
   static String formatDuration(double seconds) {
     final total = seconds.round();
     final hours = total ~/ 3600;
@@ -558,6 +450,257 @@ class DashboardPage extends StatelessWidget {
       return '${minutes}m';
     }
     return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+  }
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  String? _selectedHost;
+
+  @override
+  Widget build(BuildContext context) {
+    final query = FirebaseFirestore.instance
+        .collection('metrics')
+        .orderBy('ts', descending: true)
+        .limit(240);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('IdleWatch')),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: query.snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return _ErrorState(message: snapshot.error.toString());
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final allDocs = snapshot.data!.docs.reversed.toList();
+          if (allDocs.isEmpty) {
+            return const _EmptyState();
+          }
+
+          final hosts = allDocs
+              .map((doc) => (doc.data()['host'] ?? 'unknown').toString())
+              .toSet()
+              .toList()
+            ..sort();
+
+          if (_selectedHost == null || !hosts.contains(_selectedHost)) {
+            final latestHost = (allDocs.last.data()['host'] ?? 'unknown').toString();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _selectedHost = hosts.contains(latestHost) ? latestHost : hosts.first;
+                });
+              }
+            });
+          }
+
+          final activeHost = _selectedHost ?? (allDocs.last.data()['host'] ?? 'unknown').toString();
+          final docs = allDocs
+              .where((doc) => (doc.data()['host'] ?? 'unknown').toString() == activeHost)
+              .toList();
+
+          if (docs.isEmpty) {
+            return _EmptyStateForHost(
+              host: activeHost,
+              availableHosts: hosts,
+              selectedHost: activeHost,
+              onHostChanged: (next) {
+                setState(() {
+                  _selectedHost = next;
+                });
+              },
+            );
+          }
+
+          final firstTs = DashboardPage._asDateTime(docs.first.data()['ts']);
+          final cpuSpots = <FlSpot>[];
+          final memSpots = <FlSpot>[];
+          var droppedInvalidPoints = 0;
+
+          for (final doc in docs) {
+            final data = doc.data();
+            final ts = DashboardPage._asDateTime(data['ts']);
+            if (ts == null || firstTs == null) {
+              droppedInvalidPoints += 1;
+              continue;
+            }
+            final x = ts.difference(firstTs).inMinutes.toDouble();
+
+            final cpu = DashboardPage._asNullableDouble(data['cpuPct']);
+            final mem = DashboardPage._asNullableDouble(data['memPct']);
+            if (cpu == null || mem == null) {
+              droppedInvalidPoints += 1;
+              continue;
+            }
+
+            cpuSpots.add(FlSpot(x, cpu.clamp(0, 100)));
+            memSpots.add(FlSpot(x, mem.clamp(0, 100)));
+          }
+
+          if (cpuSpots.isEmpty || memSpots.isEmpty) {
+            return _NoValidSeriesState(host: activeHost);
+          }
+
+          final latest = docs.last.data();
+          final latestTs = DashboardPage._asDateTime(latest['ts']);
+          final activity = DashboardPage._buildActivityBreakdown(docs);
+          final minX = cpuSpots.first.x;
+          final maxX = cpuSpots.last.x;
+          final span = (maxX - minX).abs();
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _MetricChip(
+                    label: 'CPU',
+                    value: '${DashboardPage._asDouble(latest['cpuPct']).toStringAsFixed(1)}%',
+                  ),
+                  _MetricChip(
+                    label: 'Memory',
+                    value: '${DashboardPage._asDouble(latest['memPct']).toStringAsFixed(1)}%',
+                  ),
+                  _MetricChip(
+                    label: 'Tokens/min',
+                    value: '${DashboardPage._asDouble(latest['tokensPerMin']).toStringAsFixed(0)}',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _HostSelector(
+                hosts: hosts,
+                selectedHost: activeHost,
+                onChanged: (next) {
+                  setState(() {
+                    _selectedHost = next;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Last update (${activeHost}): ${latestTs != null ? DashboardPage._formatTime(latestTs) : 'unknown'}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (droppedInvalidPoints > 0) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Skipped $droppedInvalidPoints malformed sample(s) for this host.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.amberAccent),
+                ),
+              ],
+              const SizedBox(height: 20),
+              _ActivityPieCard(activity: activity),
+              const SizedBox(height: 20),
+              const _ChartLegend(),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 280,
+                child: LineChart(
+                  LineChartData(
+                    minY: 0,
+                    maxY: 100,
+                    minX: minX,
+                    maxX: maxX,
+                    gridData: const FlGridData(show: true),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        fitInsideHorizontally: true,
+                        fitInsideVertically: true,
+                        getTooltipItems: (items) {
+                          return items.map((item) {
+                            final secondsFromStart = (item.x * 60).round();
+                            final pointTs = firstTs.add(Duration(seconds: secondsFromStart));
+                            final series = item.barIndex == 0 ? 'CPU' : 'MEM';
+                            return LineTooltipItem(
+                              '${DashboardPage._formatClock(pointTs)}\n$series ${item.y.toStringAsFixed(1)}%',
+                              TextStyle(
+                                color: item.bar.color ?? Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: true, reservedSize: 34),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          interval: span > 0 ? span / 2 : 1,
+                          getTitlesWidget: (value, meta) {
+                            if (firstTs == null) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final isStart = (value - minX).abs() < 0.5;
+                            final isMiddle = span > 1 && (value - (minX + span / 2)).abs() < 0.5;
+                            final isEnd = (value - maxX).abs() < 0.5;
+                            if (!(isStart || isMiddle || isEnd)) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final secondsFromStart = (value * 60).round();
+                            final labelTs = firstTs.add(Duration(seconds: secondsFromStart));
+                            return SideTitleWidget(
+                              meta: meta,
+                              child: Text(
+                                DashboardPage._formatClock(labelTs),
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: cpuSpots,
+                        isCurved: true,
+                        barWidth: 2.5,
+                        color: Colors.greenAccent,
+                        dotData: const FlDotData(show: false),
+                      ),
+                      LineChartBarData(
+                        spots: memSpots,
+                        isCurved: true,
+                        barWidth: 2.5,
+                        color: Colors.blueAccent,
+                        dotData: const FlDotData(show: false),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -708,6 +851,44 @@ class _MetricChip extends StatelessWidget {
   }
 }
 
+class _HostSelector extends StatelessWidget {
+  const _HostSelector({
+    required this.hosts,
+    required this.selectedHost,
+    required this.onChanged,
+  });
+
+  final List<String> hosts;
+  final String selectedHost;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.dns_outlined, size: 18, color: Colors.white70),
+        const SizedBox(width: 8),
+        Text('Host:', style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(width: 10),
+        Expanded(
+          child: DropdownButton<String>(
+            value: selectedHost,
+            isExpanded: true,
+            items: hosts
+                .map((host) => DropdownMenuItem(value: host, child: Text(host)))
+                .toList(),
+            onChanged: (next) {
+              if (next != null) {
+                onChanged(next);
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ChartLegend extends StatelessWidget {
   const _ChartLegend();
 
@@ -784,6 +965,63 @@ class _EmptyState extends StatelessWidget {
         child: Text(
           'No metrics yet. Start the IdleWatch collector and push sample data '
           'to Firestore.',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyStateForHost extends StatelessWidget {
+  const _EmptyStateForHost({
+    required this.host,
+    required this.availableHosts,
+    required this.selectedHost,
+    required this.onHostChanged,
+  });
+
+  final String host;
+  final List<String> availableHosts;
+  final String selectedHost;
+  final ValueChanged<String> onHostChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('No metrics found for the selected host.'),
+          const SizedBox(height: 12),
+          _HostSelector(
+            hosts: availableHosts,
+            selectedHost: selectedHost,
+            onChanged: onHostChanged,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Selected: $host',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoValidSeriesState extends StatelessWidget {
+  const _NoValidSeriesState({required this.host});
+
+  final String host;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Host "$host" has samples, but no valid CPU/Memory numeric points to plot.',
           textAlign: TextAlign.center,
         ),
       ),

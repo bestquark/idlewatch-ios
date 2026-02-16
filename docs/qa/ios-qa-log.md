@@ -167,3 +167,57 @@ Highest remaining risks are now:
 - Validate host filter behavior with 3 interleaved hosts.
 - Verify tooltip readability on iPhone SE + iPhone Pro Max.
 - Add widget tests for: `error`, `empty`, `loading-timeout`, and `invalid-data` branches.
+
+---
+
+## Cycle — 2026-02-16 16:56 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + static verification (local Flutter/Dart CLI unavailable)
+
+### Implementation Summary
+Delivered the top feasible backlog items from the previous QA cycle:
+
+- ✅ **P1 resolved** — Added **host-scoped dashboard view** to stop multi-device metric mixing.
+  - Introduced host selector (`_HostSelector`) populated from recent metric docs.
+  - Dashboard now filters the plotted series to the selected host.
+  - Active host context is shown in “Last update (host)” text.
+
+- ✅ **P1 resolved** — Added **precise chart reading affordances**.
+  - Enabled line-chart touch tooltips showing timestamp + CPU/MEM values.
+  - Added bottom-axis time labels (start / midpoint / end) derived from sample timestamps.
+
+- ✅ **P2 partially resolved early** — Improved malformed data handling for chart integrity.
+  - Invalid CPU/MEM values are now skipped instead of coerced to zero.
+  - Added non-blocking warning text indicating dropped malformed samples.
+
+### Backlog Status Update
+
+#### P1 — Metrics from multiple hosts are mixed into one timeline
+- **Previous**: Open
+- **Now**: ✅ Resolved
+- **Notes**: Filtering is host-scoped in UI. Persistence of selected host across app restarts is not yet implemented.
+
+#### P1 — Chart lacks precise reading affordances
+- **Previous**: Open
+- **Now**: ✅ Resolved
+- **Notes**: Tooltips + time-axis labels implemented with compact formatting for narrow screens.
+
+#### P2 — Malformed data silently renders as `0`
+- **Previous**: Open
+- **Now**: ✅ Resolved (for chart series)
+- **Notes**: Line chart now drops invalid points and surfaces a warning count. Metric chips still read latest raw values and may show `0` for invalid latest sample fields.
+
+#### P2 — Loading state has no timeout/recovery path
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: Deferred to keep this cycle focused on highest-priority P1 items and maintain stability.
+
+### Validation Notes
+- Static review completed; no runtime smoke test executed because `dart`/`flutter` CLIs are unavailable in this environment.
+- Prototype structure remains single-file Flutter app (`lib/main.dart`) and should remain runnable once dependencies/toolchain are available locally.
+
+### Suggested Next Cycle
+1. Add progressive loading timeout UX (10s helper, 30s retry/troubleshooting CTA).
+2. Persist selected host across app restarts (e.g., shared preferences).
+3. Add widget tests for host selector filtering + tooltip/time-axis rendering + invalid-point warnings.
