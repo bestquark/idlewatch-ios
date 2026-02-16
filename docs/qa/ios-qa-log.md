@@ -1,3 +1,44 @@
+## Cycle — 2026-02-16 18:21 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX/auth/onboarding/performance regression sweep after host-restore race fix
+_Method_: Static review of `lib/main.dart`, `README.md`, and unit tests (runtime blocked in this environment: `flutter`/`dart` CLI unavailable)
+
+### Executive Summary
+Core P1/P2 defects from earlier cycles remain in good shape: host restore race is guarded, host recovery states keep selector access, and README now matches iOS-only scaffold. Current risk is mostly **regression confidence**, not obvious product correctness breakage.
+
+### Prioritized Open Issues
+
+### P2 — Loading/retry and recovery states still lack widget-level regression coverage
+- **Area**: UX resilience / release confidence
+- **Impact**: Recent timeout + retry and host-recovery logic is complex and currently protected by static review + a handful of pure-function tests.
+- **Evidence**:
+  - Unit tests cover normalization + host-selection decision logic.
+  - No widget tests currently assert timed loading transitions (~10s helper / ~30s retry CTA), retry action wiring, or `_NoValidSeriesState` host-switch path.
+- **Acceptance criteria**:
+  - Add widget tests for:
+    - loading helper appears around 10s,
+    - retry CTA appears around 30s,
+    - tapping retry re-subscribes cleanly,
+    - `_NoValidSeriesState` exposes host selector and can switch host.
+
+### P3 — Runtime validation still blocked in this QA environment
+- **Area**: Performance / onboarding confidence
+- **Impact**: Cannot confirm frame behavior, stream timing, or startup ergonomics on actual iOS simulator/device from this runner.
+- **Evidence**: `flutter`/`dart` CLI unavailable, so no `flutter analyze` or `flutter test` execution in this environment.
+- **Acceptance criteria**:
+  - Run `flutter analyze` and `flutter test` in a Flutter-enabled environment.
+  - Capture pass/fail summary in this log (including any flaky timing tests).
+
+### Resolved / Verified This Cycle
+- ✅ Host-restore race fix is present (`_hostSelectionReady` gate + deterministic host fallback decision path).
+- ✅ Host selector remains available in recovery states, preventing no-series dead-end.
+- ✅ Latest malformed metrics handling still renders `—` + warning path rather than silent zero.
+- ✅ README platform/runtime claims align with checked-in iOS-only scaffold and bare Firebase init.
+
+### Validation Notes
+- No code changes this cycle; documentation/backlog refresh only.
+- Next implementation cycle should prioritize test harness coverage before adding new UX surface area.
+
 ## Cycle — 2026-02-16 18:13 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
