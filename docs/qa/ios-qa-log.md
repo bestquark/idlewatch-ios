@@ -1,5 +1,79 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:01 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX, auth, onboarding, performance, 24h activity pie correctness
+_Method_: Static review of `lib/main.dart` on `main` + backlog reconciliation; runtime validation still blocked (`flutter` CLI unavailable in this environment).
+
+### Executive Summary
+The dashboard has strong momentum (host selector, tooltips, and 24h pie are now in place), but one **high-priority correctness issue remains in the new pie chart math** and two prior resilience/data-integrity gaps are still open.
+
+Highest risks now:
+1. **P1** Pie chart is not actually normalized to 24h when cronjob+subagent totals exceed 24h.
+2. **P2** Loading state can still spin forever with no timeout/recovery messaging.
+3. **P2** Latest metric chips still coerce malformed values to `0`, which can hide ingestion defects.
+
+---
+
+## Prioritized Open Issues
+
+### P1 — 24h activity pie can exceed 24h total (normalization bug)
+- **Area**: UX correctness / telemetry trust
+- **Impact**: UI text says “Pie is normalized to 24h total,” but sections can sum above 24h, producing misleading proportions.
+- **Evidence**:
+  - `activeSeconds` is capped to 24h, and `idleSeconds` is computed from that cap.
+  - But `cronjobSeconds` and `subagentSeconds` are passed through uncapped individually.
+  - If cron+subagent > 24h, pie sections become: `cron + subagent + 0 idle` (total > 24h).
+- **Repro**:
+  1. Provide docs in last 24h whose parsed activity durations sum to >24h (e.g., cron=20h, subagent=10h).
+  2. Open activity card.
+- **Current result**: Pie legend and geometry reflect >24h aggregate while claiming 24h normalization.
+- **Expected result**: Section values are normalized so total equals exactly 24h.
+- **Acceptance criteria**:
+  - If `cron + subagent <= 24h`, keep raw values and set `idle = 24h - (cron + subagent)`.
+  - If `cron + subagent > 24h`, scale both active categories proportionally so `cron + subagent == 24h` and `idle = 0`.
+  - Add a unit/widget test for over-cap input verifying exact 24h total.
+
+### P2 — Loading state still has no timeout or retry path
+- **Area**: UX resilience
+- **Impact**: Stream stalls appear as app freeze.
+- **Evidence**: `!snapshot.hasData` path still returns only `CircularProgressIndicator()`.
+- **Acceptance criteria**:
+  - ~10s: show “Still connecting…” helper text.
+  - ~30s: show retry action and troubleshooting hint.
+  - Retry action should re-subscribe cleanly (no duplicate listeners).
+
+### P2 — Latest metric chips still mask malformed data as zero
+- **Area**: Data integrity / observability
+- **Impact**: Invalid latest payloads display as `0.0%`, which looks like valid telemetry.
+- **Evidence**: `_asDouble` returns `0` for non-`num`; chips use `_asDouble(latest['cpuPct'|'memPct'|'tokensPerMin'])`.
+- **Acceptance criteria**:
+  - Chips use nullable parsing and render `—` (or “invalid”) for malformed numeric values.
+  - If latest sample is malformed, show subtle warning near chips.
+  - Keep chart behavior (skip invalid points) consistent with chip behavior.
+
+---
+
+## Resolved / Verified This Cycle
+
+### ✅ Multi-device host mixing
+- Host selector + host-scoped series filtering are present and functioning in code path.
+
+### ✅ Chart precision affordances
+- Tooltip and bottom-axis time labels are implemented.
+
+### ✅ Pie empty-state behavior
+- When no activity telemetry is detected, card shows full-idle day + explicit explanatory note.
+
+---
+
+## Recommended Next QA Pass (after fixes)
+- Validate pie normalization with synthetic over-cap datasets (e.g., 30h total active input).
+- Verify loading timeout/retry UX on constrained network.
+- Verify malformed latest sample renders `—` while historical valid points still chart.
+
+---
+
 ## Cycle — 2026-02-16 16:49 America/Toronto
 _Auditor_: QA Lead (subagent)
 _Scope_: 24h activity pie chart behavior QA (normalization to 24h, idle remainder, empty/error states, label readability)
