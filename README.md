@@ -69,11 +69,62 @@ Collection: `metrics`
 Expected fields per document:
 
 - `host` (`string`)
-- `ts` (`number`)
+- `ts` (`number | Firestore Timestamp`) — event time (epoch seconds or epoch ms both supported)
 - `cpuPct` (`number`)
 - `memPct` (`number`)
 - `gpuPct` (`number | null`)
 - `tokensPerMin` (`number`)
+
+### Activity telemetry (for 24h pie chart)
+
+Dashboard computes a 24h normalized pie (`cronjob + subagent + idle = 24h`).
+
+For each activity metric document in `metrics`, provide:
+
+1) **Activity source** (any one of these fallback fields):
+
+- `activitySource`
+- `activity_source`
+- `source`
+- `runner`
+- `actor`
+- `kind`
+- `type`
+
+Accepted values are matched loosely:
+- contains `cron` → counted as **cronjob**
+- contains `subagent`, `agent`, or `worker` → counted as **subagent**
+
+Boolean fallbacks are also accepted:
+- `isCronjob: true` (or `cronjob: true`)
+- `isSubagent: true` (or `subagent: true`)
+
+2) **Activity duration** (seconds preferred, multiple fallbacks):
+
+Seconds fields:
+- `activitySeconds`
+- `activity_seconds`
+- `activeSeconds`
+- `active_seconds`
+- `durationSeconds`
+- `duration_seconds`
+- `activeSec`
+- `durationSec`
+
+Milliseconds fields:
+- `activityMs`
+- `activity_ms`
+- `activeMs`
+- `active_ms`
+- `durationMs`
+- `duration_ms`
+
+Generic fallbacks:
+- `duration`
+- `active`
+
+Duration values can be numeric or strings like `"12"`, `"12s"`, or `"1500ms"`.
+If no valid activity data exists in the last 24h window, the chart renders a full **Idle** pie gracefully.
 
 ## CI
 

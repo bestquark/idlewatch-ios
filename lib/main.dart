@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -205,6 +207,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
+  static const int _secondsPerDay = 24 * 60 * 60;
+
   @override
   Widget build(BuildContext context) {
     final query = FirebaseFirestore.instance
@@ -241,6 +245,7 @@ class DashboardPage extends StatelessWidget {
 
           final latest = docs.last.data();
           final latestTs = _asDateTime(latest['ts']);
+          final activity = _buildActivityBreakdown(docs);
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -249,10 +254,23 @@ class DashboardPage extends StatelessWidget {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _MetricChip(label: 'CPU', value: '${_asDouble(latest['cpuPct']).toStringAsFixed(1)}%'),
-                  _MetricChip(label: 'Memory', value: '${_asDouble(latest['memPct']).toStringAsFixed(1)}%'),
-                  _MetricChip(label: 'Tokens/min', value: '${_asDouble(latest['tokensPerMin']).toStringAsFixed(0)}'),
-                  _MetricChip(label: 'Host', value: '${latest['host'] ?? 'unknown'}'),
+                  _MetricChip(
+                    label: 'CPU',
+                    value: '${_asDouble(latest['cpuPct']).toStringAsFixed(1)}%',
+                  ),
+                  _MetricChip(
+                    label: 'Memory',
+                    value: '${_asDouble(latest['memPct']).toStringAsFixed(1)}%',
+                  ),
+                  _MetricChip(
+                    label: 'Tokens/min',
+                    value:
+                        '${_asDouble(latest['tokensPerMin']).toStringAsFixed(0)}',
+                  ),
+                  _MetricChip(
+                    label: 'Host',
+                    value: '${latest['host'] ?? 'unknown'}',
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -260,7 +278,9 @@ class DashboardPage extends StatelessWidget {
                 'Last update: ${latestTs != null ? _formatTime(latestTs) : 'unknown'}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              _ActivityPieCard(activity: activity),
+              const SizedBox(height: 20),
               const _ChartLegend(),
               const SizedBox(height: 8),
               SizedBox(
@@ -314,6 +334,188 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
+  static _ActivityBreakdown _buildActivityBreakdown(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final now = DateTime.now();
+    final windowStart = now.subtract(const Duration(hours: 24));
+
+    double cronjobSeconds = 0;
+    double subagentSeconds = 0;
+    var observedActivityDoc = false;
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final ts = _asDateTime(data['ts']);
+      if (ts == null || ts.isBefore(windowStart) || ts.isAfter(now)) {
+        continue;
+      }
+
+      final source = _activitySource(data);
+      final seconds = _activitySeconds(data);
+      if (source == null || seconds == null || seconds <= 0) {
+        continue;
+      }
+
+      observedActivityDoc = true;
+      if (source == _ActivitySource.cronjob) {
+        cronjobSeconds += seconds;
+      } else if (source == _ActivitySource.subagent) {
+        subagentSeconds += seconds;
+      }
+    }
+
+    final activeSeconds = math.min(
+      _secondsPerDay.toDouble(),
+      math.max(0, cronjobSeconds + subagentSeconds),
+    );
+    final idleSeconds = (_secondsPerDay - activeSeconds).toDouble();
+
+    return _ActivityBreakdown(
+      cronjobSeconds: math.max(0, cronjobSeconds),
+      subagentSeconds: math.max(0, subagentSeconds),
+      idleSeconds: math.max(0, idleSeconds),
+      hasActivityData: observedActivityDoc,
+    );
+  }
+
+  static _ActivitySource? _activitySource(Map<String, dynamic> data) {
+    final candidates = [
+      data['activitySource'],
+      data['activity_source'],
+      data['source'],
+      data['runner'],
+      data['actor'],
+      data['kind'],
+      data['type'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is! String || candidate.trim().isEmpty) {
+        continue;
+      }
+      final normalized = candidate.toLowerCase().trim();
+      if (normalized.contains('cron')) {
+        return _ActivitySource.cronjob;
+      }
+      if (normalized.contains('subagent') ||
+          normalized.contains('agent') ||
+          normalized.contains('worker')) {
+        return _ActivitySource.subagent;
+      }
+    }
+
+    if (data['isCronjob'] == true || data['cronjob'] == true) {
+      return _ActivitySource.cronjob;
+    }
+    if (data['isSubagent'] == true || data['subagent'] == true) {
+      return _ActivitySource.subagent;
+    }
+
+    return null;
+  }
+
+  static double? _activitySeconds(Map<String, dynamic> data) {
+    const secondFields = [
+      'activitySeconds',
+      'activity_seconds',
+      'activeSeconds',
+      'active_seconds',
+      'durationSeconds',
+      'duration_seconds',
+      'activeSec',
+      'durationSec',
+    ];
+    const millisecondFields = [
+      'activityMs',
+      'activity_ms',
+      'activeMs',
+      'active_ms',
+      'durationMs',
+      'duration_ms',
+    ];
+
+    for (final key in secondFields) {
+      final parsed = _secondsFromUnknown(data[key]);
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    for (final key in millisecondFields) {
+      final parsed = _millisecondsFromUnknown(data[key]);
+      if (parsed != null) {
+        return parsed / 1000;
+      }
+    }
+
+    final genericDuration = _secondsFromUnknown(data['duration']);
+    if (genericDuration != null) {
+      return genericDuration;
+    }
+
+    final genericActive = _secondsFromUnknown(data['active']);
+    if (genericActive != null) {
+      return genericActive;
+    }
+
+    return null;
+  }
+
+  static double? _secondsFromUnknown(Object? raw) {
+    if (raw is num) {
+      if (raw <= 0) return null;
+      return raw.toDouble();
+    }
+
+    if (raw is String) {
+      final value = raw.trim().toLowerCase();
+      if (value.isEmpty) {
+        return null;
+      }
+
+      final number = double.tryParse(value);
+      if (number != null && number > 0) {
+        return number;
+      }
+
+      final msMatch = RegExp(r'^(\d+(?:\.\d+)?)\s*ms$').firstMatch(value);
+      if (msMatch != null) {
+        return double.parse(msMatch.group(1)!) / 1000;
+      }
+
+      final secMatch = RegExp(r'^(\d+(?:\.\d+)?)\s*s(ec(?:onds?)?)?$')
+          .firstMatch(value);
+      if (secMatch != null) {
+        return double.parse(secMatch.group(1)!);
+      }
+    }
+
+    return null;
+  }
+
+  static double? _millisecondsFromUnknown(Object? raw) {
+    if (raw is num) {
+      if (raw <= 0) return null;
+      return raw.toDouble();
+    }
+
+    if (raw is String) {
+      final value = raw.trim().toLowerCase();
+      final number = double.tryParse(value);
+      if (number != null && number > 0) {
+        return number;
+      }
+
+      final msMatch = RegExp(r'^(\d+(?:\.\d+)?)\s*ms$').firstMatch(value);
+      if (msMatch != null) {
+        return double.parse(msMatch.group(1)!);
+      }
+    }
+
+    return null;
+  }
+
   static double _asDouble(Object? value) {
     if (value is num) {
       return value.toDouble();
@@ -323,10 +525,16 @@ class DashboardPage extends StatelessWidget {
 
   static DateTime? _asDateTime(Object? value) {
     if (value is int) {
-      return DateTime.fromMillisecondsSinceEpoch(value);
+      if (value > 1000000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      return DateTime.fromMillisecondsSinceEpoch(value * 1000);
     }
     if (value is double) {
-      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+      if (value > 1000000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+      }
+      return DateTime.fromMillisecondsSinceEpoch((value * 1000).toInt());
     }
     if (value is Timestamp) {
       return value.toDate();
@@ -340,6 +548,137 @@ class DashboardPage extends StatelessWidget {
     final minute = local.minute.toString().padLeft(2, '0');
     final suffix = local.hour >= 12 ? 'PM' : 'AM';
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$minute $suffix';
+  }
+
+  static String formatDuration(double seconds) {
+    final total = seconds.round();
+    final hours = total ~/ 3600;
+    final minutes = (total % 3600) ~/ 60;
+    if (hours == 0) {
+      return '${minutes}m';
+    }
+    return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+  }
+}
+
+enum _ActivitySource { cronjob, subagent }
+
+class _ActivityBreakdown {
+  const _ActivityBreakdown({
+    required this.cronjobSeconds,
+    required this.subagentSeconds,
+    required this.idleSeconds,
+    required this.hasActivityData,
+  });
+
+  final double cronjobSeconds;
+  final double subagentSeconds;
+  final double idleSeconds;
+  final bool hasActivityData;
+
+  double get totalSeconds => cronjobSeconds + subagentSeconds + idleSeconds;
+}
+
+class _ActivityPieCard extends StatelessWidget {
+  const _ActivityPieCard({required this.activity});
+
+  final _ActivityBreakdown activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = [
+      if (activity.cronjobSeconds > 0)
+        PieChartSectionData(
+          value: activity.cronjobSeconds,
+          color: Colors.deepPurpleAccent,
+          title: '',
+          radius: 54,
+        ),
+      if (activity.subagentSeconds > 0)
+        PieChartSectionData(
+          value: activity.subagentSeconds,
+          color: Colors.tealAccent.shade400,
+          title: '',
+          radius: 54,
+        ),
+      PieChartSectionData(
+        value: activity.idleSeconds,
+        color: Colors.white24,
+        title: '',
+        radius: 54,
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Activity (last 24h)', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Pie is normalized to 24h total. Idle fills the remainder.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 132,
+                height: 132,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 32,
+                    startDegreeOffset: -90,
+                    sections: sections,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _LegendDot(
+                      color: Colors.deepPurpleAccent,
+                      label:
+                          'Cronjob ${DashboardPage.formatDuration(activity.cronjobSeconds)}',
+                    ),
+                    const SizedBox(height: 8),
+                    _LegendDot(
+                      color: Colors.tealAccent.shade400,
+                      label:
+                          'Subagent ${DashboardPage.formatDuration(activity.subagentSeconds)}',
+                    ),
+                    const SizedBox(height: 8),
+                    _LegendDot(
+                      color: Colors.white54,
+                      label: 'Idle ${DashboardPage.formatDuration(activity.idleSeconds)}',
+                    ),
+                    if (!activity.hasActivityData) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'No recent activity telemetry found. Showing full idle day.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.amberAccent),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -401,7 +740,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label),
+        Flexible(child: Text(label)),
       ],
     );
   }
