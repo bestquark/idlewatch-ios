@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -215,17 +216,24 @@ class DashboardPage extends StatefulWidget {
   static _ActivityBreakdown _buildActivityBreakdown(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
-    final now = DateTime.now();
-    final windowStart = now.subtract(const Duration(hours: 24));
+    final entries = docs.map((doc) => doc.data());
+    return _buildActivityBreakdownFromEntries(entries);
+  }
+
+  static _ActivityBreakdown _buildActivityBreakdownFromEntries(
+    Iterable<Map<String, dynamic>> entries, {
+    DateTime? now,
+  }) {
+    final anchor = now ?? DateTime.now();
+    final windowStart = anchor.subtract(const Duration(hours: 24));
 
     double cronjobSeconds = 0;
     double subagentSeconds = 0;
     var observedActivityDoc = false;
 
-    for (final doc in docs) {
-      final data = doc.data();
+    for (final data in entries) {
       final ts = _asDateTime(data['ts']);
-      if (ts == null || ts.isBefore(windowStart) || ts.isAfter(now)) {
+      if (ts == null || ts.isBefore(windowStart) || ts.isAfter(anchor)) {
         continue;
       }
 
@@ -243,16 +251,15 @@ class DashboardPage extends StatefulWidget {
       }
     }
 
-    final activeSeconds = math.min(
-      _secondsPerDay.toDouble(),
-      math.max(0, cronjobSeconds + subagentSeconds),
+    final normalized = computeNormalizedActivitySeconds(
+      cronjobSeconds: cronjobSeconds,
+      subagentSeconds: subagentSeconds,
     );
-    final idleSeconds = (_secondsPerDay - activeSeconds).toDouble();
 
     return _ActivityBreakdown(
-      cronjobSeconds: math.max(0, cronjobSeconds),
-      subagentSeconds: math.max(0, subagentSeconds),
-      idleSeconds: math.max(0, idleSeconds),
+      cronjobSeconds: normalized['cronjobSeconds']!,
+      subagentSeconds: normalized['subagentSeconds']!,
+      idleSeconds: normalized['idleSeconds']!,
       hasActivityData: observedActivityDoc,
     );
   }
@@ -394,13 +401,6 @@ class DashboardPage extends StatefulWidget {
     return null;
   }
 
-  static double _asDouble(Object? value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    return 0;
-  }
-
   static double? _asNullableDouble(Object? value) {
     if (value is num) {
       return value.toDouble();
@@ -442,6 +442,28 @@ class DashboardPage extends StatefulWidget {
     return '$hour:$minute';
   }
 
+  static Map<String, double> computeNormalizedActivitySeconds({
+    required double cronjobSeconds,
+    required double subagentSeconds,
+  }) {
+    var safeCron = math.max(0, cronjobSeconds);
+    var safeSubagent = math.max(0, subagentSeconds);
+    final activeTotal = safeCron + safeSubagent;
+
+    if (activeTotal > _secondsPerDay) {
+      final scale = _secondsPerDay / activeTotal;
+      safeCron *= scale;
+      safeSubagent *= scale;
+    }
+
+    final idle = math.max(0, _secondsPerDay.toDouble() - (safeCron + safeSubagent));
+    return {
+      'cronjobSeconds': safeCron,
+      'subagentSeconds': safeSubagent,
+      'idleSeconds': idle,
+    };
+  }
+
   static String formatDuration(double seconds) {
     final total = seconds.round();
     final hours = total ~/ 3600;
@@ -455,6 +477,42 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String? _selectedHost;
+  Timer? _loadingTicker;
+  int _loadingSeconds = 0;
+  int _retryNonce = 0;
+
+  void _ensureLoadingTicker() {
+    if (_loadingTicker != null) {
+      return;
+    }
+    _loadingTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadingSeconds += 1;
+      });
+    });
+  }
+
+  void _stopLoadingTicker() {
+    _loadingTicker?.cancel();
+    _loadingTicker = null;
+    if (_loadingSeconds != 0) {
+      _loadingSeconds = 0;
+    }
+  }
+
+  void _retryStream() {
+    setState(() {
+      _retryNonce += 1;
+      _loadingSeconds = 0;
+    });
+  }
+
+  @override
+  void dispose() {
+    _loadingTicker?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -466,16 +524,23 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('IdleWatch')),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        key: ValueKey('metrics-stream-$_retryNonce'),
         stream: query.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
+            _stopLoadingTicker();
             return _ErrorState(message: snapshot.error.toString());
           }
 
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            _ensureLoadingTicker();
+            return _LoadingState(
+              elapsedSeconds: _loadingSeconds,
+              onRetry: _loadingSeconds >= 30 ? _retryStream : null,
+            );
           }
 
+          _stopLoadingTicker();
           final allDocs = snapshot.data!.docs.reversed.toList();
           if (allDocs.isEmpty) {
             return const _EmptyState();
@@ -547,6 +612,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           final latest = docs.last.data();
           final latestTs = DashboardPage._asDateTime(latest['ts']);
+          final latestCpu = DashboardPage._asNullableDouble(latest['cpuPct']);
+          final latestMem = DashboardPage._asNullableDouble(latest['memPct']);
+          final latestTpm = DashboardPage._asNullableDouble(latest['tokensPerMin']);
+          final latestInvalid = latestCpu == null || latestMem == null || latestTpm == null;
           final activity = DashboardPage._buildActivityBreakdown(docs);
           final minX = cpuSpots.first.x;
           final maxX = cpuSpots.last.x;
@@ -561,18 +630,28 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   _MetricChip(
                     label: 'CPU',
-                    value: '${DashboardPage._asDouble(latest['cpuPct']).toStringAsFixed(1)}%',
+                    value: latestCpu != null ? '${latestCpu.toStringAsFixed(1)}%' : '—',
                   ),
                   _MetricChip(
                     label: 'Memory',
-                    value: '${DashboardPage._asDouble(latest['memPct']).toStringAsFixed(1)}%',
+                    value: latestMem != null ? '${latestMem.toStringAsFixed(1)}%' : '—',
                   ),
                   _MetricChip(
                     label: 'Tokens/min',
-                    value: '${DashboardPage._asDouble(latest['tokensPerMin']).toStringAsFixed(0)}',
+                    value: latestTpm != null ? '${latestTpm.toStringAsFixed(0)}' : '—',
                   ),
                 ],
               ),
+              if (latestInvalid) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Latest sample has malformed metric values. Showing — for invalid fields.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.amberAccent),
+                ),
+              ],
               const SizedBox(height: 12),
               _HostSelector(
                 hosts: hosts,
@@ -923,6 +1002,55 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Flexible(child: Text(label)),
       ],
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState({required this.elapsedSeconds, this.onRetry});
+
+  final int elapsedSeconds;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 14),
+            const Text('Connecting to metrics stream…'),
+            if (elapsedSeconds >= 10) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Still connecting. This can happen on slow or waking networks.',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (elapsedSeconds >= 30) ...[
+              const SizedBox(height: 12),
+              Text(
+                'If this takes too long, check network access and Firestore permissions.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.amberAccent),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry connection'),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,48 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:13 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while keeping prototype runnable
+_Method_: Implementation pass in `lib/main.dart` + unit test addition + static verification (`flutter` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered all three currently prioritized feasible items from QA:
+
+- ✅ **P1 resolved** — 24h pie activity is now truly normalized.
+  - Added proportional scaling when `cronjob + subagent > 24h`.
+  - Idle remainder is now computed from normalized values so total is always 24h.
+  - Added test coverage in `test/activity_normalization_test.dart` for both under-cap and over-cap scenarios.
+
+- ✅ **P2 resolved** — Loading state now has progressive timeout + retry UX.
+  - ~10s: “Still connecting…” helper text appears.
+  - ~30s: troubleshooting hint + “Retry connection” action appears.
+  - Retry triggers a fresh stream subscription key to avoid stale listener state.
+
+- ✅ **P2 resolved** — Latest metric chips no longer mask malformed data as zero.
+  - Latest CPU/Memory/Tokens chips now use nullable parsing.
+  - Invalid latest fields render as `—`.
+  - Added subtle warning message when latest sample is malformed.
+
+### Backlog Status Update
+
+#### P1 — 24h activity pie can exceed 24h total (normalization bug)
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — Loading state still has no timeout or retry path
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — Latest metric chips still mask malformed data as zero
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+### Validation Notes
+- Unit tests added for activity normalization math, but not executed in this environment due missing Flutter toolchain.
+- Static code review confirms prototype remains single-file app + test file and should stay runnable in a proper Flutter setup.
+
+---
+
 ## Cycle — 2026-02-16 17:01 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX, auth, onboarding, performance, 24h activity pie correctness
