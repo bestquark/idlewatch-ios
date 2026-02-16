@@ -35,19 +35,25 @@ In Firebase console, create apps for:
 - **Authentication** → enable **Anonymous** provider
 - **Firestore Database** → create database (test mode for prototype is fine)
 
-#### C. Generate FlutterFire options
+#### C. Configure platform Firebase files (prototype path)
 
-Preferred approach:
+This prototype currently initializes Firebase with bare `Firebase.initializeApp()`.
+That means it relies on platform-native Firebase config files (not
+`DefaultFirebaseOptions.currentPlatform`).
+
+Set up these files:
+
+- **iOS**: add `ios/Runner/GoogleService-Info.plist`
+- **Web**: ensure Firebase web config is provided in `web/index.html` (or migrate app bootstrap to explicit FlutterFire options)
+
+Optional: you can still run FlutterFire CLI for future migration:
 
 ```bash
 dart pub global activate flutterfire_cli
 flutterfire configure
 ```
 
-This should generate `lib/firebase_options.dart`.
-
-> If you use manual config files instead, ensure your Flutter app still provides
-> Firebase options at runtime for web/iOS.
+If you later wire `lib/firebase_options.dart` into runtime bootstrap, update this README section accordingly.
 
 ### 4) Run
 

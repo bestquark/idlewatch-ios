@@ -1,5 +1,44 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:55 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + `README.md` + dependency update; static verification only (`flutter`/`dart` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered both open **P2** items from the latest QA cycle:
+
+- ✅ **P2 resolved** — Selected host now persists across restarts.
+  - Added local persistence via `shared_preferences` (`idlewatch.selectedHost`).
+  - App now restores last selected host on startup.
+  - If persisted host no longer exists, dashboard gracefully falls back to latest available host and persists fallback.
+  - Host-switch handling is now centralized in `_setSelectedHost(...)` and reused across normal/empty/no-valid-series states.
+
+- ✅ **P2 resolved** — Firebase onboarding docs now match runtime bootstrap behavior.
+  - README updated to explicitly document the current prototype path: bare `Firebase.initializeApp()` with platform-native config files.
+  - Clarified iOS and web setup expectations and noted FlutterFire CLI as optional migration path.
+  - Removed prior implication that `lib/firebase_options.dart` is currently required by runtime.
+
+### Backlog Status Update
+
+#### P2 — Selected host still resets on app restart
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — Firebase onboarding docs and runtime init are still loosely coupled
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P3 — No automated regression tests yet for loading timeout/retry + host-switch recovery UI states
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: Deferred this cycle; adding robust widget tests without local Flutter execution would be high-risk/low-confidence.
+
+### Validation Notes
+- Could not run `flutter analyze` / `flutter test` due missing toolchain in this environment.
+- Changes are scoped and prototype-safe: host persistence + doc alignment only.
+
+
 ## Cycle — 2026-02-16 17:41 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX, auth, onboarding, performance follow-up after latest P1 fixes

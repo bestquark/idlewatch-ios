@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -535,10 +536,46 @@ class DashboardSeriesData {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  static const _selectedHostPrefKey = 'idlewatch.selectedHost';
+
   String? _selectedHost;
   Timer? _loadingTicker;
   int _loadingSeconds = 0;
   int _retryNonce = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedHostSelection();
+  }
+
+  Future<void> _loadPersistedHostSelection() async {
+    final prefs = await SharedPreferences.getInstance();
+    final persisted = prefs.getString(_selectedHostPrefKey);
+    if (!mounted || persisted == null || persisted.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _selectedHost = persisted;
+    });
+  }
+
+  Future<void> _persistSelectedHost(String host) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_selectedHostPrefKey, host);
+  }
+
+  void _setSelectedHost(String host) {
+    if (_selectedHost == host) {
+      return;
+    }
+
+    setState(() {
+      _selectedHost = host;
+    });
+    unawaited(_persistSelectedHost(host));
+  }
 
   void _ensureLoadingTicker() {
     if (_loadingTicker != null) {
@@ -613,11 +650,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           if (_selectedHost == null || !hosts.contains(_selectedHost)) {
             final latestHost = (allDocs.last.data()['host'] ?? 'unknown').toString();
+            final fallbackHost = hosts.contains(latestHost) ? latestHost : hosts.first;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                setState(() {
-                  _selectedHost = hosts.contains(latestHost) ? latestHost : hosts.first;
-                });
+                _setSelectedHost(fallbackHost);
               }
             });
           }
@@ -632,11 +668,7 @@ class _DashboardPageState extends State<DashboardPage> {
               host: activeHost,
               availableHosts: hosts,
               selectedHost: activeHost,
-              onHostChanged: (next) {
-                setState(() {
-                  _selectedHost = next;
-                });
-              },
+              onHostChanged: _setSelectedHost,
             );
           }
 
@@ -653,11 +685,7 @@ class _DashboardPageState extends State<DashboardPage> {
               host: activeHost,
               availableHosts: hosts,
               selectedHost: activeHost,
-              onHostChanged: (next) {
-                setState(() {
-                  _selectedHost = next;
-                });
-              },
+              onHostChanged: _setSelectedHost,
             );
           }
 
@@ -708,11 +736,7 @@ class _DashboardPageState extends State<DashboardPage> {
               _HostSelector(
                 hosts: hosts,
                 selectedHost: activeHost,
-                onChanged: (next) {
-                  setState(() {
-                    _selectedHost = next;
-                  });
-                },
+                onChanged: _setSelectedHost,
               ),
               const SizedBox(height: 8),
               Text(
