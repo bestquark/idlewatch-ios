@@ -1,5 +1,57 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 18:01 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX/auth/onboarding/performance follow-up after host persistence + docs alignment changes
+_Method_: Static review of `lib/main.dart`, `README.md`, and tests (runtime still blocked here: `flutter` / `dart` CLI unavailable)
+
+### Executive Summary
+Good progress overall: host persistence exists, onboarding docs are clearer, and prior P1/P2 blockers remain resolved. This pass found one high-impact UX regression risk and one onboarding mismatch still worth cleaning up.
+
+### Prioritized Open Issues
+
+### P1 — Persisted host can be overwritten during startup race
+- **Area**: UX / host-selection reliability
+- **Impact**: In multi-host environments, users may still land on newest host instead of their previously chosen host after restart.
+- **Evidence**:
+  - `_loadPersistedHostSelection()` is async in `initState`.
+  - Stream may emit before persisted value is loaded.
+  - Build fallback path (`if (_selectedHost == null || !hosts.contains(_selectedHost))`) schedules `_setSelectedHost(fallbackHost)`, which also persists fallback.
+  - This can overwrite the real persisted choice before it is restored.
+- **Acceptance criteria**:
+  - Gate fallback host assignment until persisted-host load completes (e.g., `_hostSelectionReady` flag).
+  - Do not persist fallback when selection is still in bootstrap/restore phase.
+  - Add regression test or deterministic state test for: persisted host `A`, latest host `B`, initial snapshot arrives before prefs read → selected host must remain `A`.
+
+### P2 — README mentions web Firebase config path, but web target scaffold is absent in repo
+- **Area**: Onboarding / setup trustworthiness
+- **Impact**: New contributors can spend time looking for `web/index.html` that does not exist in current project tree.
+- **Evidence**:
+  - README still states platform support `iOS + web (Chrome)` and references configuring `web/index.html`.
+  - Repository currently has no `web/` directory.
+- **Acceptance criteria**:
+  - Either add/restore web platform scaffold (`flutter create --platforms=web .` equivalent) and document it,
+  - Or trim README to iOS-only instructions until web scaffold is committed.
+  - Keep platform claims in README aligned with actual checked-in project structure.
+
+### P3 — Test coverage still misses loading/retry + host-selection persistence behavior
+- **Area**: Resilience / regression confidence
+- **Impact**: Recent UX state-machine changes are protected mainly by static review.
+- **Evidence**: Existing tests only cover activity normalization and malformed-first-timestamp series baseline.
+- **Acceptance criteria**:
+  - Add widget/state tests for loading helper at ~10s, retry CTA at ~30s, and retry trigger behavior.
+  - Add host-persistence restore/fallback tests including race scenario above.
+
+### Resolved / Verified This Cycle
+- ✅ Selected host persistence mechanism is present (`shared_preferences`) and used on host changes.
+- ✅ Dashboard still keeps host selector available in recovery states (`_NoValidSeriesState`, `_EmptyStateForHost`).
+- ✅ Activity pie normalization math remains correct and unit-tested for over-cap totals.
+
+### Validation Notes
+- No code changes performed this cycle; backlog/docs refresh only.
+- Execution of `flutter analyze` / `flutter test` remains blocked in this environment due missing toolchain.
+
+
 ## Cycle — 2026-02-16 17:55 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
