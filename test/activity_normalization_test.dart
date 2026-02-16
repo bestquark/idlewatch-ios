@@ -37,4 +37,34 @@ void main() {
       );
     });
   });
+
+  group('buildSeriesDataFromEntries', () {
+    test('uses first valid timestamp baseline even when first doc ts is malformed', () {
+      final series = DashboardPage.buildSeriesDataFromEntries([
+        {
+          'ts': 'bad-ts',
+          'cpuPct': 22,
+          'memPct': 33,
+        },
+        {
+          'ts': 1700000000,
+          'cpuPct': 25,
+          'memPct': 40,
+        },
+        {
+          'ts': 1700000060,
+          'cpuPct': 35,
+          'memPct': 50,
+        },
+      ]);
+
+      expect(series.hasValidSeries, isTrue);
+      expect(series.firstTimestamp, isNotNull);
+      expect(series.cpuSpots.length, 2);
+      expect(series.memSpots.length, 2);
+      expect(series.cpuSpots.first.x, closeTo(0, 0.001));
+      expect(series.cpuSpots.last.x, closeTo(1, 0.001));
+      expect(series.droppedInvalidPoints, 1);
+    });
+  });
 }

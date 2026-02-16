@@ -1,5 +1,42 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:33 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + unit test expansion + static verification (`flutter` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered both currently open **P1** issues from the latest QA cycle:
+
+- ✅ **P1 resolved** — First malformed timestamp no longer invalidates otherwise-valid host series.
+  - Refactored chart point building into `DashboardPage.buildSeriesDataFromEntries(...)`.
+  - Baseline timestamp now anchors to the **first valid `ts`** across host entries, not blindly to `docs.first`.
+  - Added regression coverage for malformed-first-doc + valid-following-doc in `test/activity_normalization_test.dart`.
+
+- ✅ **P1 resolved** — “No valid series” state now includes host-switch recovery path.
+  - `_NoValidSeriesState` now renders `_HostSelector` with the current host context.
+  - Users can switch to another host without restarting the app.
+  - Added explanatory copy indicating malformed timestamp/numeric samples may be the reason.
+
+### Backlog Status Update
+
+#### P1 — First malformed timestamp can drop all otherwise-valid chart points
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P1 — No host selector on “no valid series” path creates recovery dead-end
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — Host selection still not persisted across app restarts
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: Deferred in this pass to keep focus on top-priority P1 correctness/recoverability fixes.
+
+### Validation Notes
+- Added/updated unit tests, but execution is still blocked in this environment due missing Flutter toolchain.
+- Prototype remains runnable as a single-screen app architecture with incremental UI state additions only.
+
 ## Cycle — 2026-02-16 17:21 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX, auth, onboarding, performance, activity + chart integrity after recent fixes

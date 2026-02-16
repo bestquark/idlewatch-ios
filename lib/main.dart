@@ -473,6 +473,65 @@ class DashboardPage extends StatefulWidget {
     }
     return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
   }
+
+  static DashboardSeriesData buildSeriesDataFromEntries(
+    Iterable<Map<String, dynamic>> entries,
+  ) {
+    DateTime? firstValidTs;
+    for (final data in entries) {
+      final ts = _asDateTime(data['ts']);
+      if (ts != null) {
+        firstValidTs = ts;
+        break;
+      }
+    }
+
+    final cpuSpots = <FlSpot>[];
+    final memSpots = <FlSpot>[];
+    var droppedInvalidPoints = 0;
+
+    for (final data in entries) {
+      final ts = _asDateTime(data['ts']);
+      if (ts == null || firstValidTs == null) {
+        droppedInvalidPoints += 1;
+        continue;
+      }
+
+      final cpu = _asNullableDouble(data['cpuPct']);
+      final mem = _asNullableDouble(data['memPct']);
+      if (cpu == null || mem == null) {
+        droppedInvalidPoints += 1;
+        continue;
+      }
+
+      final x = ts.difference(firstValidTs).inMinutes.toDouble();
+      cpuSpots.add(FlSpot(x, cpu.clamp(0, 100)));
+      memSpots.add(FlSpot(x, mem.clamp(0, 100)));
+    }
+
+    return DashboardSeriesData(
+      firstTimestamp: firstValidTs,
+      cpuSpots: cpuSpots,
+      memSpots: memSpots,
+      droppedInvalidPoints: droppedInvalidPoints,
+    );
+  }
+}
+
+class DashboardSeriesData {
+  const DashboardSeriesData({
+    required this.firstTimestamp,
+    required this.cpuSpots,
+    required this.memSpots,
+    required this.droppedInvalidPoints,
+  });
+
+  final DateTime? firstTimestamp;
+  final List<FlSpot> cpuSpots;
+  final List<FlSpot> memSpots;
+  final int droppedInvalidPoints;
+
+  bool get hasValidSeries => cpuSpots.isNotEmpty && memSpots.isNotEmpty;
 }
 
 class _DashboardPageState extends State<DashboardPage> {
@@ -581,35 +640,28 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           }
 
-          final firstTs = DashboardPage._asDateTime(docs.first.data()['ts']);
-          final cpuSpots = <FlSpot>[];
-          final memSpots = <FlSpot>[];
-          var droppedInvalidPoints = 0;
+          final series = DashboardPage.buildSeriesDataFromEntries(
+            docs.map((doc) => doc.data()),
+          );
+          final firstTs = series.firstTimestamp;
+          final cpuSpots = series.cpuSpots;
+          final memSpots = series.memSpots;
+          final droppedInvalidPoints = series.droppedInvalidPoints;
 
-          for (final doc in docs) {
-            final data = doc.data();
-            final ts = DashboardPage._asDateTime(data['ts']);
-            if (ts == null || firstTs == null) {
-              droppedInvalidPoints += 1;
-              continue;
-            }
-            final x = ts.difference(firstTs).inMinutes.toDouble();
-
-            final cpu = DashboardPage._asNullableDouble(data['cpuPct']);
-            final mem = DashboardPage._asNullableDouble(data['memPct']);
-            if (cpu == null || mem == null) {
-              droppedInvalidPoints += 1;
-              continue;
-            }
-
-            cpuSpots.add(FlSpot(x, cpu.clamp(0, 100)));
-            memSpots.add(FlSpot(x, mem.clamp(0, 100)));
+          if (!series.hasValidSeries) {
+            return _NoValidSeriesState(
+              host: activeHost,
+              availableHosts: hosts,
+              selectedHost: activeHost,
+              onHostChanged: (next) {
+                setState(() {
+                  _selectedHost = next;
+                });
+              },
+            );
           }
 
-          if (cpuSpots.isEmpty || memSpots.isEmpty) {
-            return _NoValidSeriesState(host: activeHost);
-          }
-
+          final chartStartTs = firstTs!;
           final latest = docs.last.data();
           final latestTs = DashboardPage._asDateTime(latest['ts']);
           final latestCpu = DashboardPage._asNullableDouble(latest['cpuPct']);
@@ -703,7 +755,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         getTooltipItems: (items) {
                           return items.map((item) {
                             final secondsFromStart = (item.x * 60).round();
-                            final pointTs = firstTs.add(Duration(seconds: secondsFromStart));
+                            final pointTs = chartStartTs.add(Duration(seconds: secondsFromStart));
                             final series = item.barIndex == 0 ? 'CPU' : 'MEM';
                             return LineTooltipItem(
                               '${DashboardPage._formatClock(pointTs)}\n$series ${item.y.toStringAsFixed(1)}%',
@@ -732,10 +784,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           reservedSize: 28,
                           interval: span > 0 ? span / 2 : 1,
                           getTitlesWidget: (value, meta) {
-                            if (firstTs == null) {
-                              return const SizedBox.shrink();
-                            }
-
                             final isStart = (value - minX).abs() < 0.5;
                             final isMiddle = span > 1 && (value - (minX + span / 2)).abs() < 0.5;
                             final isEnd = (value - maxX).abs() < 0.5;
@@ -744,7 +792,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             }
 
                             final secondsFromStart = (value * 60).round();
-                            final labelTs = firstTs.add(Duration(seconds: secondsFromStart));
+                            final labelTs = chartStartTs.add(Duration(seconds: secondsFromStart));
                             return SideTitleWidget(
                               meta: meta,
                               child: Text(
@@ -1139,19 +1187,45 @@ class _EmptyStateForHost extends StatelessWidget {
 }
 
 class _NoValidSeriesState extends StatelessWidget {
-  const _NoValidSeriesState({required this.host});
+  const _NoValidSeriesState({
+    required this.host,
+    required this.availableHosts,
+    required this.selectedHost,
+    required this.onHostChanged,
+  });
 
   final String host;
+  final List<String> availableHosts;
+  final String selectedHost;
+  final ValueChanged<String> onHostChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          'Host "$host" has samples, but no valid CPU/Memory numeric points to plot.',
-          textAlign: TextAlign.center,
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Host "$host" has samples, but no valid CPU/Memory numeric points to plot.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Some samples may have malformed timestamps or numeric fields.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.amberAccent),
+          ),
+          const SizedBox(height: 14),
+          _HostSelector(
+            hosts: availableHosts,
+            selectedHost: selectedHost,
+            onChanged: onHostChanged,
+          ),
+        ],
       ),
     );
   }
