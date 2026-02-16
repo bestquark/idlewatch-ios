@@ -1,3 +1,54 @@
+## Cycle — 2026-02-16 18:41 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX/auth/onboarding/performance follow-up after widget-test hardening pass
+_Method_: Static review of `lib/main.dart`, `README.md`, and test suite (runtime still blocked here: `flutter`/`dart` CLI unavailable)
+
+### Executive Summary
+Recent work is solid: loading/retry and recovery-state widget tests landed, host-restore race remains guarded, and malformed-series fallback UX is still recoverable.
+
+Current highest risk has shifted to **data-window correctness under multi-host/high-volume traffic**. The dashboard currently derives host view + 24h activity from the latest global 240 docs, which can under-represent selected hosts and skew “last 24h” summaries.
+
+### Prioritized Open Issues
+
+### P1 — Host-scoped dashboard can silently miss valid samples due to global pre-limit
+- **Area**: UX correctness / multi-host reliability
+- **Impact**: A selected host with lower traffic can appear empty or “no valid series” even when valid data exists just outside the latest global 240 docs.
+- **Evidence**:
+  - Query is global: `collection('metrics').orderBy('ts', descending: true).limit(240)`.
+  - Host filter is applied in memory after fetch.
+  - In mixed-host environments, busy hosts can crowd out quieter hosts from this capped window.
+- **Acceptance criteria**:
+  - Move to host-scoped query when host is known (e.g., `where('host', isEqualTo: selectedHost)` + ordered limit), or maintain per-host query strategy that guarantees enough points for selected host.
+  - Preserve host selector UX without showing false-empty states caused by unrelated host traffic.
+  - Add regression test/spec for scenario: host A high-volume + host B low-volume where B still renders correctly when selected.
+
+### P1 — “Activity (last 24h)” pie can be inaccurate because it is computed from truncated host docs, not full 24h window
+- **Area**: Telemetry integrity / performance analytics trust
+- **Impact**: Pie may over/under-report cronjob/subagent/idle totals if selected host emits >240 docs/day or if docs in the 24h window are pushed out by global limit pressure.
+- **Evidence**:
+  - Activity breakdown uses the already-truncated `docs` list after global `limit(240)` fetch.
+  - UI copy promises a normalized 24h view.
+- **Acceptance criteria**:
+  - Compute activity from a dedicated 24h query window (host-scoped where applicable), not the line-chart display subset.
+  - Keep normalization math (`cron + subagent + idle = 24h`) but ensure source dataset truly covers the intended window.
+  - Add deterministic test for >240-sample 24h dataset validating stable pie totals.
+
+### P3 — Runtime validation remains blocked in this QA environment
+- **Area**: Performance / release confidence
+- **Impact**: Cannot verify stream timing, tooltip behavior, and widget-test stability on real iOS simulator/device in this runner.
+- **Acceptance criteria**:
+  - Run `flutter analyze` and `flutter test` in a Flutter-enabled environment.
+  - Capture pass/fail and any flaky timing notes in this log.
+
+### Resolved / Verified This Cycle
+- ✅ Loading/retry and no-valid-series recovery widget coverage remains present and aligned with prior acceptance criteria.
+- ✅ Host-restore bootstrap guard (`_hostSelectionReady`) still prevents startup persistence race overwrite.
+- ✅ README and runtime bootstrap remain aligned to iOS prototype + bare `Firebase.initializeApp()` path.
+
+### Validation Notes
+- No code changes this cycle; backlog prioritization and QA-log refresh only.
+- Next implementation pass should prioritize query/data-window correctness before additional UI surface work.
+
 ## Cycle — 2026-02-16 18:33 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
