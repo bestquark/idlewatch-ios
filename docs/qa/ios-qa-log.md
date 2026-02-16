@@ -1,3 +1,42 @@
+## Cycle — 2026-02-16 18:13 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + README + unit test expansion; static verification only (`flutter` / `dart` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered both top feasible items from the latest QA cycle:
+
+- ✅ **P1 resolved** — Persisted host is no longer overwritten during startup race.
+  - Added `_hostSelectionReady` bootstrap gate so fallback host is **not** persisted before SharedPreferences restore completes.
+  - Introduced deterministic host resolution helper: `DashboardPage.decideHostSelection(...)`.
+  - Fallback host persistence now only happens after host-restore bootstrap is complete and current selection is invalid.
+  - Added regression tests for race/restore/fallback decisions in `test/activity_normalization_test.dart`.
+
+- ✅ **P2 resolved** — README platform claims now match checked-in scaffold.
+  - Updated README platform statement to iOS-only prototype scope.
+  - Removed web run command from quickstart.
+  - Clarified web setup as future work only if web scaffold is added.
+
+### Backlog Status Update
+
+#### P1 — Persisted host can be overwritten during startup race
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — README mentions web Firebase config path, but web target scaffold is absent in repo
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P3 — Test coverage still misses loading/retry + host-selection persistence behavior
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: Added host-selection decision regression tests this cycle, but loading/retry widget-state coverage remains pending.
+
+### Validation Notes
+- Could not execute `flutter analyze` / `flutter test` in this environment due missing Flutter toolchain.
+- Changes are scoped to startup host-selection correctness + documentation alignment and keep prototype architecture intact.
+
+
 # IdleWatch iOS QA Log
 
 ## Cycle — 2026-02-16 18:01 America/Toronto

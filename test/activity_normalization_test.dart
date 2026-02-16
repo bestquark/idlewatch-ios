@@ -67,4 +67,42 @@ void main() {
       expect(series.droppedInvalidPoints, 1);
     });
   });
+
+  group('decideHostSelection', () {
+    test('does not persist fallback during bootstrap race before prefs load', () {
+      final decision = DashboardPage.decideHostSelection(
+        hosts: const ['host-a', 'host-b'],
+        latestHost: 'host-b',
+        selectedHost: null,
+        hostSelectionReady: false,
+      );
+
+      expect(decision.activeHost, 'host-b');
+      expect(decision.fallbackHostToPersist, isNull);
+    });
+
+    test('keeps persisted host when ready even if latest host differs', () {
+      final decision = DashboardPage.decideHostSelection(
+        hosts: const ['host-a', 'host-b'],
+        latestHost: 'host-b',
+        selectedHost: 'host-a',
+        hostSelectionReady: true,
+      );
+
+      expect(decision.activeHost, 'host-a');
+      expect(decision.fallbackHostToPersist, isNull);
+    });
+
+    test('persists fallback once ready when persisted host is missing', () {
+      final decision = DashboardPage.decideHostSelection(
+        hosts: const ['host-a', 'host-b'],
+        latestHost: 'host-b',
+        selectedHost: 'removed-host',
+        hostSelectionReady: true,
+      );
+
+      expect(decision.activeHost, 'host-b');
+      expect(decision.fallbackHostToPersist, 'host-b');
+    });
+  });
 }

@@ -2,7 +2,7 @@
 
 Small Flutter prototype that visualizes IdleWatch metrics from Firestore.
 
-- Platforms: iOS + web (Chrome)
+- Platforms: iOS (prototype currently scaffolded for iOS only)
 - Auth: Firebase anonymous auth
 - Data source: Firestore `metrics` collection
 
@@ -26,9 +26,8 @@ This app expects FlutterFire configuration and anonymous auth enabled.
 
 #### A. Create Firebase apps
 
-In Firebase console, create apps for:
+In Firebase console, create an app for:
 - **iOS** (`ios/Runner` bundle id)
-- **Web**
 
 #### B. Enable services
 
@@ -44,7 +43,7 @@ That means it relies on platform-native Firebase config files (not
 Set up these files:
 
 - **iOS**: add `ios/Runner/GoogleService-Info.plist`
-- **Web**: ensure Firebase web config is provided in `web/index.html` (or migrate app bootstrap to explicit FlutterFire options)
+- **Web**: not currently scaffolded in this repo. If you add web support later, generate the Flutter web platform first and then add web Firebase config.
 
 Optional: you can still run FlutterFire CLI for future migration:
 
@@ -58,9 +57,6 @@ If you later wire `lib/firebase_options.dart` into runtime bootstrap, update thi
 ### 4) Run
 
 ```bash
-# Web
-flutter run -d chrome
-
 # iOS simulator/device
 flutter run -d ios
 ```

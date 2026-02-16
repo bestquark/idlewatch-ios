@@ -475,6 +475,41 @@ class DashboardPage extends StatefulWidget {
     return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
   }
 
+  static DashboardHostSelectionDecision decideHostSelection({
+    required List<String> hosts,
+    required String latestHost,
+    required String? selectedHost,
+    required bool hostSelectionReady,
+  }) {
+    if (hosts.isEmpty) {
+      return const DashboardHostSelectionDecision(
+        activeHost: 'unknown',
+        fallbackHostToPersist: null,
+      );
+    }
+
+    final fallbackHost = hosts.contains(latestHost) ? latestHost : hosts.first;
+
+    if (selectedHost != null && hosts.contains(selectedHost)) {
+      return DashboardHostSelectionDecision(
+        activeHost: selectedHost,
+        fallbackHostToPersist: null,
+      );
+    }
+
+    if (!hostSelectionReady) {
+      return DashboardHostSelectionDecision(
+        activeHost: fallbackHost,
+        fallbackHostToPersist: null,
+      );
+    }
+
+    return DashboardHostSelectionDecision(
+      activeHost: fallbackHost,
+      fallbackHostToPersist: fallbackHost,
+    );
+  }
+
   static DashboardSeriesData buildSeriesDataFromEntries(
     Iterable<Map<String, dynamic>> entries,
   ) {
@@ -535,10 +570,21 @@ class DashboardSeriesData {
   bool get hasValidSeries => cpuSpots.isNotEmpty && memSpots.isNotEmpty;
 }
 
+class DashboardHostSelectionDecision {
+  const DashboardHostSelectionDecision({
+    required this.activeHost,
+    required this.fallbackHostToPersist,
+  });
+
+  final String activeHost;
+  final String? fallbackHostToPersist;
+}
+
 class _DashboardPageState extends State<DashboardPage> {
   static const _selectedHostPrefKey = 'idlewatch.selectedHost';
 
   String? _selectedHost;
+  bool _hostSelectionReady = false;
   Timer? _loadingTicker;
   int _loadingSeconds = 0;
   int _retryNonce = 0;
@@ -552,12 +598,15 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _loadPersistedHostSelection() async {
     final prefs = await SharedPreferences.getInstance();
     final persisted = prefs.getString(_selectedHostPrefKey);
-    if (!mounted || persisted == null || persisted.isEmpty) {
+    if (!mounted) {
       return;
     }
 
     setState(() {
-      _selectedHost = persisted;
+      if (persisted != null && persisted.isNotEmpty) {
+        _selectedHost = persisted;
+      }
+      _hostSelectionReady = true;
     });
   }
 
@@ -566,7 +615,7 @@ class _DashboardPageState extends State<DashboardPage> {
     await prefs.setString(_selectedHostPrefKey, host);
   }
 
-  void _setSelectedHost(String host) {
+  void _setSelectedHost(String host, {bool persist = true}) {
     if (_selectedHost == host) {
       return;
     }
@@ -574,7 +623,9 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       _selectedHost = host;
     });
-    unawaited(_persistSelectedHost(host));
+    if (persist) {
+      unawaited(_persistSelectedHost(host));
+    }
   }
 
   void _ensureLoadingTicker() {
@@ -648,17 +699,23 @@ class _DashboardPageState extends State<DashboardPage> {
               .toList()
             ..sort();
 
-          if (_selectedHost == null || !hosts.contains(_selectedHost)) {
-            final latestHost = (allDocs.last.data()['host'] ?? 'unknown').toString();
-            final fallbackHost = hosts.contains(latestHost) ? latestHost : hosts.first;
+          final latestHost = (allDocs.last.data()['host'] ?? 'unknown').toString();
+          final hostDecision = DashboardPage.decideHostSelection(
+            hosts: hosts,
+            latestHost: latestHost,
+            selectedHost: _selectedHost,
+            hostSelectionReady: _hostSelectionReady,
+          );
+
+          if (hostDecision.fallbackHostToPersist != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                _setSelectedHost(fallbackHost);
+                _setSelectedHost(hostDecision.fallbackHostToPersist!);
               }
             });
           }
 
-          final activeHost = _selectedHost ?? (allDocs.last.data()['host'] ?? 'unknown').toString();
+          final activeHost = hostDecision.activeHost;
           final docs = allDocs
               .where((doc) => (doc.data()['host'] ?? 'unknown').toString() == activeHost)
               .toList();
