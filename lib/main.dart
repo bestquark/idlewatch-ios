@@ -211,6 +211,8 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   static const int _secondsPerDay = 24 * 60 * 60;
+  static const int hostSeriesLimit = 240;
+  static const int hostActivityLimit = 2000;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -534,6 +536,20 @@ class DashboardPage extends StatefulWidget {
     );
   }
 
+  @visibleForTesting
+  static Map<String, double> buildActivityBreakdownForTest(
+    Iterable<Map<String, dynamic>> entries, {
+    DateTime? now,
+  }) {
+    final activity = _buildActivityBreakdownFromEntries(entries, now: now);
+    return {
+      'cronjobSeconds': activity.cronjobSeconds,
+      'subagentSeconds': activity.subagentSeconds,
+      'idleSeconds': activity.idleSeconds,
+      'totalSeconds': activity.totalSeconds,
+    };
+  }
+
   static DashboardSeriesData buildSeriesDataFromEntries(
     Iterable<Map<String, dynamic>> entries,
   ) {
@@ -687,16 +703,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final query = FirebaseFirestore.instance
+    final hostDiscoveryQuery = FirebaseFirestore.instance
         .collection('metrics')
         .orderBy('ts', descending: true)
-        .limit(240);
+        .limit(DashboardPage.hostSeriesLimit);
 
     return Scaffold(
       appBar: AppBar(title: const Text('IdleWatch')),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        key: ValueKey('metrics-stream-$_retryNonce'),
-        stream: query.snapshots(),
+        key: ValueKey('metrics-host-discovery-$_retryNonce'),
+        stream: hostDiscoveryQuery.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             _stopLoadingTicker();
@@ -740,195 +756,251 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           final activeHost = hostDecision.activeHost;
-          final docs = allDocs
-              .where((doc) => (doc.data()['host'] ?? 'unknown').toString() == activeHost)
-              .toList();
+          final hostSeriesQuery = FirebaseFirestore.instance
+              .collection('metrics')
+              .where('host', isEqualTo: activeHost)
+              .orderBy('ts', descending: true)
+              .limit(DashboardPage.hostSeriesLimit);
 
-          if (docs.isEmpty) {
-            return _EmptyStateForHost(
-              host: activeHost,
-              availableHosts: hosts,
-              selectedHost: activeHost,
-              onHostChanged: _setSelectedHost,
-            );
-          }
+          final hostActivityQuery = FirebaseFirestore.instance
+              .collection('metrics')
+              .where('host', isEqualTo: activeHost)
+              .orderBy('ts', descending: true)
+              .limit(DashboardPage.hostActivityLimit);
 
-          final series = DashboardPage.buildSeriesDataFromEntries(
-            docs.map((doc) => doc.data()),
-          );
-          final firstTs = series.firstTimestamp;
-          final cpuSpots = series.cpuSpots;
-          final memSpots = series.memSpots;
-          final droppedInvalidPoints = series.droppedInvalidPoints;
+          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            key: ValueKey('metrics-host-series-$activeHost-$_retryNonce'),
+            stream: hostSeriesQuery.snapshots(),
+            builder: (context, hostSnapshot) {
+              if (hostSnapshot.hasError) {
+                return _ErrorState(message: hostSnapshot.error.toString());
+              }
 
-          if (!series.hasValidSeries) {
-            return _NoValidSeriesState(
-              host: activeHost,
-              availableHosts: hosts,
-              selectedHost: activeHost,
-              onHostChanged: _setSelectedHost,
-            );
-          }
+              if (!hostSnapshot.hasData) {
+                _ensureLoadingTicker();
+                return _LoadingState(
+                  elapsedSeconds: _loadingSeconds,
+                  onRetry: _loadingSeconds >= 30 ? _retryStream : null,
+                );
+              }
 
-          final chartStartTs = firstTs!;
-          final latest = docs.last.data();
-          final latestTs = DashboardPage._asDateTime(latest['ts']);
-          final latestCpu = DashboardPage._asNullableDouble(latest['cpuPct']);
-          final latestMem = DashboardPage._asNullableDouble(latest['memPct']);
-          final latestTpm = DashboardPage._asNullableDouble(latest['tokensPerMin']);
-          final latestInvalid = latestCpu == null || latestMem == null || latestTpm == null;
-          final activity = DashboardPage._buildActivityBreakdown(docs);
-          final minX = cpuSpots.first.x;
-          final maxX = cpuSpots.last.x;
-          final span = (maxX - minX).abs();
+              _stopLoadingTicker();
+              final docs = hostSnapshot.data!.docs.reversed.toList();
+              if (docs.isEmpty) {
+                return _EmptyStateForHost(
+                  host: activeHost,
+                  availableHosts: hosts,
+                  selectedHost: activeHost,
+                  onHostChanged: _setSelectedHost,
+                );
+              }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              final series = DashboardPage.buildSeriesDataFromEntries(
+                docs.map((doc) => doc.data()),
+              );
+              final firstTs = series.firstTimestamp;
+              final cpuSpots = series.cpuSpots;
+              final memSpots = series.memSpots;
+              final droppedInvalidPoints = series.droppedInvalidPoints;
+
+              if (!series.hasValidSeries) {
+                return _NoValidSeriesState(
+                  host: activeHost,
+                  availableHosts: hosts,
+                  selectedHost: activeHost,
+                  onHostChanged: _setSelectedHost,
+                );
+              }
+
+              final chartStartTs = firstTs!;
+              final latest = docs.last.data();
+              final latestTs = DashboardPage._asDateTime(latest['ts']);
+              final latestCpu = DashboardPage._asNullableDouble(latest['cpuPct']);
+              final latestMem = DashboardPage._asNullableDouble(latest['memPct']);
+              final latestTpm = DashboardPage._asNullableDouble(latest['tokensPerMin']);
+              final latestInvalid = latestCpu == null || latestMem == null || latestTpm == null;
+              final minX = cpuSpots.first.x;
+              final maxX = cpuSpots.last.x;
+              final span = (maxX - minX).abs();
+
+              return ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  _MetricChip(
-                    label: 'CPU',
-                    value: latestCpu != null ? '${latestCpu.toStringAsFixed(1)}%' : '—',
-                  ),
-                  _MetricChip(
-                    label: 'Memory',
-                    value: latestMem != null ? '${latestMem.toStringAsFixed(1)}%' : '—',
-                  ),
-                  _MetricChip(
-                    label: 'Tokens/min',
-                    value: latestTpm != null ? '${latestTpm.toStringAsFixed(0)}' : '—',
-                  ),
-                ],
-              ),
-              if (latestInvalid) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Latest sample has malformed metric values. Showing — for invalid fields.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.amberAccent),
-                ),
-              ],
-              const SizedBox(height: 12),
-              _HostSelector(
-                hosts: hosts,
-                selectedHost: activeHost,
-                onChanged: _setSelectedHost,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Last update (${activeHost}): ${latestTs != null ? DashboardPage._formatTime(latestTs) : 'unknown'}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (droppedInvalidPoints > 0) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Skipped $droppedInvalidPoints malformed sample(s) for this host.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.amberAccent),
-                ),
-              ],
-              const SizedBox(height: 20),
-              _ActivityPieCard(activity: activity),
-              const SizedBox(height: 20),
-              const _ChartLegend(),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 280,
-                child: LineChart(
-                  LineChartData(
-                    minY: 0,
-                    maxY: 100,
-                    minX: minX,
-                    maxX: maxX,
-                    gridData: const FlGridData(show: true),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    lineTouchData: LineTouchData(
-                      enabled: true,
-                      touchTooltipData: LineTouchTooltipData(
-                        fitInsideHorizontally: true,
-                        fitInsideVertically: true,
-                        getTooltipItems: (items) {
-                          return items.map((item) {
-                            final secondsFromStart = (item.x * 60).round();
-                            final pointTs = chartStartTs.add(Duration(seconds: secondsFromStart));
-                            final series = item.barIndex == 0 ? 'CPU' : 'MEM';
-                            return LineTooltipItem(
-                              '${DashboardPage._formatClock(pointTs)}\n$series ${item.y.toStringAsFixed(1)}%',
-                              TextStyle(
-                                color: item.bar.color ?? Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            );
-                          }).toList();
-                        },
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _MetricChip(
+                        label: 'CPU',
+                        value: latestCpu != null ? '${latestCpu.toStringAsFixed(1)}%' : '—',
                       ),
-                    ),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: true, reservedSize: 34),
+                      _MetricChip(
+                        label: 'Memory',
+                        value: latestMem != null ? '${latestMem.toStringAsFixed(1)}%' : '—',
                       ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 28,
-                          interval: span > 0 ? span / 2 : 1,
-                          getTitlesWidget: (value, meta) {
-                            final isStart = (value - minX).abs() < 0.5;
-                            final isMiddle = span > 1 && (value - (minX + span / 2)).abs() < 0.5;
-                            final isEnd = (value - maxX).abs() < 0.5;
-                            if (!(isStart || isMiddle || isEnd)) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final secondsFromStart = (value * 60).round();
-                            final labelTs = chartStartTs.add(Duration(seconds: secondsFromStart));
-                            return SideTitleWidget(
-                              meta: meta,
-                              child: Text(
-                                DashboardPage._formatClock(labelTs),
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: cpuSpots,
-                        isCurved: true,
-                        barWidth: 2.5,
-                        color: Colors.greenAccent,
-                        dotData: const FlDotData(show: false),
-                      ),
-                      LineChartBarData(
-                        spots: memSpots,
-                        isCurved: true,
-                        barWidth: 2.5,
-                        color: Colors.blueAccent,
-                        dotData: const FlDotData(show: false),
+                      _MetricChip(
+                        label: 'Tokens/min',
+                        value: latestTpm != null ? '${latestTpm.toStringAsFixed(0)}' : '—',
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
+                  if (latestInvalid) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Latest sample has malformed metric values. Showing — for invalid fields.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.amberAccent),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _HostSelector(
+                    hosts: hosts,
+                    selectedHost: activeHost,
+                    onChanged: _setSelectedHost,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Last update (${activeHost}): ${latestTs != null ? DashboardPage._formatTime(latestTs) : 'unknown'}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (droppedInvalidPoints > 0) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Skipped $droppedInvalidPoints malformed sample(s) for this host.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.amberAccent),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    key: ValueKey('metrics-host-activity-$activeHost-$_retryNonce'),
+                    stream: hostActivityQuery.snapshots(),
+                    builder: (context, activitySnapshot) {
+                      if (activitySnapshot.hasError) {
+                        return _ActivityPieCard(
+                          activity: _ActivityBreakdown(
+                            cronjobSeconds: 0,
+                            subagentSeconds: 0,
+                            idleSeconds: DashboardPage._secondsPerDay.toDouble(),
+                            hasActivityData: false,
+                          ),
+                        );
+                      }
+
+                      if (!activitySnapshot.hasData) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      final activity = DashboardPage._buildActivityBreakdown(
+                        activitySnapshot.data!.docs,
+                      );
+                      return _ActivityPieCard(activity: activity);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const _ChartLegend(),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 280,
+                    child: LineChart(
+                      LineChartData(
+                        minY: 0,
+                        maxY: 100,
+                        minX: minX,
+                        maxX: maxX,
+                        gridData: const FlGridData(show: true),
+                        borderData: FlBorderData(
+                          show: true,
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            fitInsideHorizontally: true,
+                            fitInsideVertically: true,
+                            getTooltipItems: (items) {
+                              return items.map((item) {
+                                final secondsFromStart = (item.x * 60).round();
+                                final pointTs = chartStartTs.add(Duration(seconds: secondsFromStart));
+                                final series = item.barIndex == 0 ? 'CPU' : 'MEM';
+                                return LineTooltipItem(
+                                  '${DashboardPage._formatClock(pointTs)}\n$series ${item.y.toStringAsFixed(1)}%',
+                                  TextStyle(
+                                    color: item.bar.color ?? Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: true, reservedSize: 34),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 28,
+                              interval: span > 0 ? span / 2 : 1,
+                              getTitlesWidget: (value, meta) {
+                                final isStart = (value - minX).abs() < 0.5;
+                                final isMiddle = span > 1 && (value - (minX + span / 2)).abs() < 0.5;
+                                final isEnd = (value - maxX).abs() < 0.5;
+                                if (!(isStart || isMiddle || isEnd)) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                final secondsFromStart = (value * 60).round();
+                                final labelTs = chartStartTs.add(Duration(seconds: secondsFromStart));
+                                return SideTitleWidget(
+                                  meta: meta,
+                                  child: Text(
+                                    DashboardPage._formatClock(labelTs),
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: cpuSpots,
+                            isCurved: true,
+                            barWidth: 2.5,
+                            color: Colors.greenAccent,
+                            dotData: const FlDotData(show: false),
+                          ),
+                          LineChartBarData(
+                            spots: memSpots,
+                            isCurved: true,
+                            barWidth: 2.5,
+                            color: Colors.blueAccent,
+                            dotData: const FlDotData(show: false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),

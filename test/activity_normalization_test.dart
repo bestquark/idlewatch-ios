@@ -39,6 +39,29 @@ void main() {
     });
   });
 
+  group('buildActivityBreakdownForTest', () {
+    test('uses dedicated activity dataset beyond chart-sized 240 sample window', () {
+      final now = DateTime.utc(2026, 2, 16, 23, 0);
+      final entries = List.generate(300, (index) {
+        return {
+          'ts': now.subtract(Duration(minutes: index * 4)).millisecondsSinceEpoch,
+          'activitySource': 'cronjob',
+          'activitySeconds': 60,
+        };
+      });
+
+      final breakdown = DashboardPage.buildActivityBreakdownForTest(
+        entries,
+        now: now,
+      );
+
+      expect(breakdown['cronjobSeconds'], closeTo(18000, 0.001));
+      expect(breakdown['subagentSeconds'], closeTo(0, 0.001));
+      expect(breakdown['idleSeconds'], closeTo(68400, 0.001));
+      expect(breakdown['totalSeconds'], closeTo(86400, 0.001));
+    });
+  });
+
   group('buildSeriesDataFromEntries', () {
     test('uses first valid timestamp baseline even when first doc ts is malformed', () {
       final series = DashboardPage.buildSeriesDataFromEntries([

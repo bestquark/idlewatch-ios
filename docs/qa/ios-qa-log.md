@@ -1,3 +1,39 @@
+## Cycle — 2026-02-16 18:55 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + unit test expansion; static verification only (`flutter` / `dart` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered both open **P1** items from the latest QA cycle:
+
+- ✅ **P1 resolved** — Dashboard series now uses a **host-scoped Firestore stream** instead of filtering the latest global window in-memory.
+  - Added dedicated host-series query: `where('host', isEqualTo: activeHost).orderBy('ts', descending: true).limit(240)`.
+  - Keeps host selector UX while avoiding false-empty/underrepresented host views caused by unrelated host traffic.
+
+- ✅ **P1 resolved** — “Activity (last 24h)” pie is now computed from a **dedicated host activity dataset** (separate query) rather than the chart subset.
+  - Added host activity query: `where('host', isEqualTo: activeHost).orderBy('ts', descending: true).limit(2000)`.
+  - Pie breakdown now derives from this dedicated dataset, then applies existing 24h-window filtering + normalization.
+  - Added deterministic test coverage (`buildActivityBreakdownForTest`) validating stable 24h totals with a >240-sample dataset.
+
+### Backlog Status Update
+
+#### P1 — Host-scoped dashboard can silently miss valid samples due to global pre-limit
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P1 — “Activity (last 24h)” pie can be inaccurate because it is computed from truncated host docs, not full 24h window
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P3 — Runtime validation remains blocked in this QA environment
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: Flutter/Dart toolchain remains unavailable here, so runtime/analyze/test execution is still pending.
+
+### Validation Notes
+- Could not run `flutter analyze` / `flutter test` locally due missing toolchain.
+- Changes are scoped to query/data-window correctness and preserve existing prototype architecture.
+
 ## Cycle — 2026-02-16 18:41 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX/auth/onboarding/performance follow-up after widget-test hardening pass
