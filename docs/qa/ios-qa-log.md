@@ -1,5 +1,50 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:41 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX, auth, onboarding, performance follow-up after latest P1 fixes
+_Method_: Static review of `lib/main.dart`, `README.md`, and tests; runtime blocked here (`flutter` / `dart` CLI unavailable).
+
+### Executive Summary
+The app is in much better shape than earlier today: host recovery dead-end and malformed-first-timestamp chart invalidation are both fixed. Current risk has shifted from hard correctness failures to polish/resilience gaps.
+
+### Prioritized Open Issues
+
+### P2 — Selected host still resets on app restart
+- **Area**: UX / operator ergonomics
+- **Impact**: Users must repeatedly reselect host after relaunch, especially painful in multi-host setups.
+- **Evidence**: `_selectedHost` is state-only and reinitialized from latest host each session; no local persistence layer is used.
+- **Acceptance criteria**:
+  - Persist selected host locally and restore at startup.
+  - If persisted host no longer exists, gracefully fall back to latest available host.
+
+### P2 — Firebase onboarding docs and runtime init are still loosely coupled
+- **Area**: Onboarding / auth setup reliability
+- **Impact**: Setup can be confusing for new contributors because README says FlutterFire options are expected, while app currently calls `Firebase.initializeApp()` without explicit `DefaultFirebaseOptions.currentPlatform`.
+- **Evidence**:
+  - README section "Generate FlutterFire options" references `lib/firebase_options.dart`.
+  - Runtime bootstrap uses bare `Firebase.initializeApp()`.
+- **Acceptance criteria**:
+  - Either wire explicit FlutterFire options in code, or adjust README to clearly document platform-specific implicit config path for this prototype.
+  - Ensure setup instructions match actual bootstrap behavior end-to-end.
+
+### P3 — No automated regression tests yet for loading timeout/retry + host-switch recovery UI states
+- **Area**: Performance/resilience QA confidence
+- **Impact**: Recent UX resiliency fixes are currently protected mostly by manual/static review.
+- **Evidence**: Existing tests cover normalization + malformed-first-timestamp data path only.
+- **Acceptance criteria**:
+  - Add widget tests for loading (10s helper, 30s retry CTA), `_NoValidSeriesState` host switch, and malformed latest-chip warning rendering.
+
+### Resolved / Verified This Cycle
+- ✅ First valid timestamp baseline logic is present and tested.
+- ✅ No-valid-series state now includes host selector recovery path.
+- ✅ Latest malformed chip values render `—` instead of silent zero.
+
+### Validation Notes
+- Unable to execute `flutter analyze` / `flutter test` in this environment (toolchain missing).
+- No code changes made this cycle; documentation/backlog refresh only.
+
+
 ## Cycle — 2026-02-16 17:33 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
