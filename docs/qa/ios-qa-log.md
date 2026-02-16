@@ -1,3 +1,33 @@
+## Cycle — 2026-02-16 18:33 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Implementation pass in `lib/main.dart` + widget test expansion; static verification only (`flutter` / `dart` CLI unavailable in this environment)
+
+### Implementation Summary
+Delivered the top open feasible QA item from the latest cycle:
+
+- ✅ **P2 resolved** — Added widget-level regression coverage for loading/retry and no-valid-series host recovery states.
+  - Exposed test hooks in `DashboardPage` via `buildLoadingStateForTest(...)` and `buildNoValidSeriesStateForTest(...)`.
+  - Added widget tests validating:
+    - loading helper copy appears around 10 seconds,
+    - retry CTA appears around 30 seconds and callback wiring fires,
+    - no-valid-series state includes host selector and host-switch callback path.
+
+### Backlog Status Update
+
+#### P2 — Loading/retry and recovery states still lack widget-level regression coverage
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P3 — Runtime validation still blocked in this QA environment
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: This environment still lacks Flutter/Dart toolchain, so `flutter analyze` and `flutter test` execution remains pending.
+
+### Validation Notes
+- Could not execute `flutter analyze` / `flutter test` locally due missing toolchain.
+- Changes are test-focused and prototype-safe; runtime behavior remains unchanged.
+
 ## Cycle — 2026-02-16 18:21 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX/auth/onboarding/performance regression sweep after host-restore race fix

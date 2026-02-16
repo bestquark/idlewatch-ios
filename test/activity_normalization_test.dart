@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idlewatch_ios/main.dart';
 
@@ -103,6 +104,82 @@ void main() {
 
       expect(decision.activeHost, 'host-b');
       expect(decision.fallbackHostToPersist, 'host-b');
+    });
+  });
+
+  group('loading and recovery widget states', () {
+    testWidgets('loading helper appears around 10 seconds', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardPage.buildLoadingStateForTest(elapsedSeconds: 10),
+          ),
+        ),
+      );
+
+      expect(find.text('Connecting to metrics stream…'), findsOneWidget);
+      expect(
+        find.text('Still connecting. This can happen on slow or waking networks.'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry connection'), findsNothing);
+    });
+
+    testWidgets('retry CTA appears around 30 seconds and fires callback', (
+      tester,
+    ) async {
+      var retryTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardPage.buildLoadingStateForTest(
+              elapsedSeconds: 30,
+              onRetry: () {
+                retryTapped = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Retry connection'), findsOneWidget);
+      await tester.tap(find.text('Retry connection'));
+      await tester.pumpAndSettle();
+      expect(retryTapped, isTrue);
+    });
+
+    testWidgets('no valid series state exposes host selector and supports switching', (
+      tester,
+    ) async {
+      String? changedTo;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardPage.buildNoValidSeriesStateForTest(
+              host: 'host-a',
+              availableHosts: const ['host-a', 'host-b'],
+              selectedHost: 'host-a',
+              onHostChanged: (value) {
+                changedTo = value;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Host "host-a" has samples, but no valid CPU/Memory numeric points to plot.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(DropdownButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('host-b').last);
+      await tester.pumpAndSettle();
+
+      expect(changedTo, 'host-b');
     });
   });
 }

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -507,6 +508,29 @@ class DashboardPage extends StatefulWidget {
     return DashboardHostSelectionDecision(
       activeHost: fallbackHost,
       fallbackHostToPersist: fallbackHost,
+    );
+  }
+
+  @visibleForTesting
+  static Widget buildLoadingStateForTest({
+    required int elapsedSeconds,
+    VoidCallback? onRetry,
+  }) {
+    return _LoadingState(elapsedSeconds: elapsedSeconds, onRetry: onRetry);
+  }
+
+  @visibleForTesting
+  static Widget buildNoValidSeriesStateForTest({
+    required String host,
+    required List<String> availableHosts,
+    required String selectedHost,
+    required ValueChanged<String> onHostChanged,
+  }) {
+    return _NoValidSeriesState(
+      host: host,
+      availableHosts: availableHosts,
+      selectedHost: selectedHost,
+      onHostChanged: onHostChanged,
     );
   }
 
