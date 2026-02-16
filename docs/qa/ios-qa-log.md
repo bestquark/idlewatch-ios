@@ -1,5 +1,79 @@
 # IdleWatch iOS QA Log
 
+## Cycle — 2026-02-16 17:21 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX, auth, onboarding, performance, activity + chart integrity after recent fixes
+_Method_: Static review of `lib/main.dart` + backlog reconciliation; runtime still blocked here (`flutter` CLI unavailable).
+
+### Executive Summary
+The latest pass fixed the previously highest-priority defects (pie normalization, loading timeout/retry, malformed latest chips). Nice momentum.
+
+Two important correctness/recoverability gaps remain:
+1. **P1** A single malformed earliest timestamp can invalidate the entire host series rendering.
+2. **P1** “No valid series” screen is a UX dead-end (no host switch), forcing app restart to recover.
+
+---
+
+## Prioritized Open Issues
+
+### P1 — First malformed timestamp can drop all otherwise-valid chart points
+- **Area**: Data integrity / observability correctness
+- **Impact**: A host with mostly valid samples can show “no valid points” if the first doc in that host list has invalid `ts`.
+- **Evidence**:
+  - `firstTs` is derived from `docs.first.data()['ts']`.
+  - Point-building loop discards every row when `firstTs == null` (`if (ts == null || firstTs == null) { ... continue; }`).
+- **Repro**:
+  1. Ensure selected host has first chronologically-ordered doc with malformed `ts`.
+  2. Ensure later docs have valid `ts`, `cpuPct`, `memPct`.
+  3. Open dashboard.
+- **Current result**: `_NoValidSeriesState` despite valid later samples.
+- **Expected result**: Chart should anchor to first **valid** timestamp and plot subsequent valid points.
+- **Acceptance criteria**:
+  - Derive baseline timestamp from first valid sample candidate, not blindly from `docs.first`.
+  - Unit/widget test covering malformed-first-doc + valid-following-doc scenario.
+
+### P1 — No host selector on “no valid series” path creates recovery dead-end
+- **Area**: UX / onboarding resilience
+- **Impact**: If selected host has malformed CPU/MEM points, user is stranded on `_NoValidSeriesState` with no in-app way to switch hosts.
+- **Evidence**: `_NoValidSeriesState` currently renders only static text and receives only `host`.
+- **Repro**:
+  1. Select host A with invalid numeric series.
+  2. Keep host B valid.
+  3. Observe host A no-valid-series screen.
+- **Current result**: Cannot change host from that state.
+- **Expected result**: Host selector should remain available in all non-fatal states.
+- **Acceptance criteria**:
+  - Add host selector to `_NoValidSeriesState` (and optionally quick “switch to most recent valid host”).
+  - Preserve selected host context + explain why data was skipped.
+
+### P2 — Host selection still not persisted across app restarts
+- **Area**: UX polish / operator ergonomics
+- **Impact**: Users repeatedly reselect hosts during routine usage.
+- **Evidence**: `_selectedHost` is in-memory only.
+- **Acceptance criteria**:
+  - Persist host choice locally and restore on startup.
+  - Fallback to latest host if persisted host no longer exists.
+
+---
+
+## Resolved / Verified This Cycle
+
+### ✅ Pie normalization now truly enforces 24h total
+- Proportional scaling + idle remainder logic is present and covered by unit tests.
+
+### ✅ Loading state now has progressive helper + retry
+- 10s helper, 30s troubleshooting + retry CTA, and retry nonce re-subscribe implemented.
+
+### ✅ Latest chip malformed values no longer silently show zero
+- Nullable latest parsing renders `—` + warning message.
+
+---
+
+## Recommended Next QA Pass (after fixes)
+- Validate malformed-first-timestamp recovery with synthetic host datasets.
+- Verify no-valid-series state still allows host switching without restart.
+- Run `flutter test` for normalization and any new baseline/host-selector regression tests once toolchain is available.
+
 ## Cycle — 2026-02-16 17:13 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while keeping prototype runnable
