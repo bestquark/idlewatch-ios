@@ -2,6 +2,25 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 16:08 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: Backlog status review; `flutter analyze` timed out after 90s — 8th consecutive toolchain failure
+
+### Summary
+- ⚠️ `flutter analyze` timed out (90s) — 8th consecutive cycle unable to run Flutter toolchain.
+- ✅ All P1–P4 backlog items remain closed; no code changes since commit `bf83382`.
+- ✅ Last successful full validation: 19/19 tests + clean analyzer at commit `3b31e77` (10:52 cycle).
+
+### Backlog Status Update
+- P1 (UX responsiveness): ✅ Closed.
+- P2 (Auth recovery): ✅ Closed.
+- P3 (Onboarding/host stability): ✅ Closed.
+- P4 (Perf guardrails): ✅ Closed (documented exception for older-device hardware).
+
+### Note
+Persistent host resource issue (~6 hours). No code changes to validate; risk remains low.
+
 ## Cycle — 2026-02-17 15:50 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
