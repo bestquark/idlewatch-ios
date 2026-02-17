@@ -1,3 +1,45 @@
+## Cycle — 2026-02-17 00:39 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: CI-failure triage + analyzer-fix implementation + runtime-smoke evidence refresh
+
+### Implementation Summary
+- ✅ Triaged latest failed iOS smoke CI run (`22087124707`) and confirmed remaining analyzer blocker in `lib/main.dart` (`map_value_type_not_assignable` at activity idle normalization).
+- ✅ Implemented fix in app code while preserving runtime behavior:
+  - corrected idle-seconds clamp typing to `math.max(0.0, ...)` in `computeNormalizedActivitySeconds(...)`, ensuring the returned map remains `Map<String, double>`.
+  - cleaned nearby analyzer noise (`unnecessary_string_interpolations`, `unnecessary_brace_in_string_interps`, `prefer_const_constructors`) to keep CI signal focused.
+- ✅ Executed iOS smoke workflow/report automation for this cycle and linked fresh artifacts.
+
+### Backlog Status Update
+
+#### P1 — GitHub iOS smoke CI fails on analyzer/type/API-compat errors in `lib/main.dart`
+- **Previous**: ⏳ Open (mitigated; pending CI confirmation)
+- **Now**: ⏳ Open (further mitigated; pending CI confirmation)
+- **Reason**: Remaining analyzer type error has been patched locally; confirmation depends on the newly queued remote iOS smoke run.
+- **Progress this cycle**:
+  - Resolved remaining `map_value_type_not_assignable` path in activity normalization.
+  - Removed non-blocking analyzer noise near the same area to reduce future triage friction.
+  - Verification run queued: https://github.com/bestquark/idlewatch-ios/actions/runs/22087306075
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
+- **Progress this cycle**:
+  - QA log linkage is now automated, reducing missed artifact references.
+  - Current iOS host preflight status: **blocked**.
+  - Current workflow attempt status: **blocked (flutter/fvm missing)**.
+  - GitHub iOS smoke CI trigger status: **queued**.
+  - GitHub iOS smoke CI conclusion: **pending**.
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-003932.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-003932.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-003932.log
+  - GitHub iOS smoke CI run: https://github.com/bestquark/idlewatch-ios/actions/runs/22087306075
+
+### Validation Notes
+- Local runtime validation remains blocked in this host due to missing Flutter/FVM.
+- Post-push validation step: confirm run `22087306075` conclusion and close P1 if green.
+
 ## Cycle — 2026-02-17 00:32 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability

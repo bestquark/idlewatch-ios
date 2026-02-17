@@ -569,7 +569,7 @@ class DashboardPage extends StatefulWidget {
       safeSubagent *= scale;
     }
 
-    final idle = math.max(0, _secondsPerDay.toDouble() - (safeCron + safeSubagent));
+    final idle = math.max(0.0, _secondsPerDay.toDouble() - (safeCron + safeSubagent));
     return {
       'cronjobSeconds': safeCron,
       'subagentSeconds': safeSubagent,
@@ -1005,7 +1005,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       _MetricChip(
                         label: 'Tokens/min',
-                        value: latestTpm != null ? '${latestTpm.toStringAsFixed(0)}' : '—',
+                        value: latestTpm != null ? latestTpm.toStringAsFixed(0) : '—',
                       ),
                     ],
                   ),
@@ -1027,7 +1027,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Last update (${activeHost}): ${latestTs != null ? DashboardPage._formatTime(latestTs) : 'unknown'}',
+                    'Last update ($activeHost): ${latestTs != null ? DashboardPage._formatTime(latestTs) : 'unknown'}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   if (droppedInvalidPoints > 0) ...[
@@ -1360,8 +1360,8 @@ class _ChartLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
+    return const Row(
+      children: [
         _LegendDot(color: Colors.greenAccent, label: 'CPU'),
         SizedBox(width: 16),
         _LegendDot(color: Colors.blueAccent, label: 'Memory'),
