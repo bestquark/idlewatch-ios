@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/qa/**'
 
 concurrency:
   group: ios-smoke-${{ github.ref }}

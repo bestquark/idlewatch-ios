@@ -1,3 +1,32 @@
+## Cycle — 2026-02-17 03:58 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog item while preserving prototype runnability
+_Method_: Prevent CI evidence churn from docs-only pushes by narrowing iOS Smoke workflow triggers
+
+### Implementation Summary
+- ✅ Identified top-priority blocker: repeated docs-only iOS QA-cycle commits retrigger/cancel iOS Smoke runs before completion.
+- ✅ Updated `.github/workflows/ios-smoke.yml` to ignore `docs/qa/**` on `push`, preventing docs refresh commits from re-triggering CI.
+- ✅ Validated locally with `flutter analyze` and `flutter test` (both passing).
+- ✅ Kept prototype runtime/app logic unchanged (CI trigger guardrail only).
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Remote iOS smoke CI closure pending after scaffolding/workflow hardening
+- **Previous**: ⏳ Open
+- **Now**: ⏳ Open (mitigated)
+- **Status note**: The highest-risk churn source was docs-only CI retriggering, now blocked by workflow `paths-ignore: ['docs/qa/**']`.
+- **Evidence this cycle**:
+  - PR/commit includes: `.github/workflows/ios-smoke.yml` path-filter update.
+  - Local validation: `flutter analyze` ✅, `flutter test` ✅.
+  - GitHub iOS Smoke run in progress at last check: https://github.com/bestquark/idlewatch-ios/actions/runs/22091856105 (will now cease being overwritten by docs-only updates).
+- **Acceptance criteria**:
+  - First green GitHub `iOS Smoke` run on `main` after this fix is recorded in QA log.
+  - QA closure can proceed once analyzer/tests + simulator build pass in same run.
+
+### Validation Notes
+- No app runtime behavior changes were made.
+- Next action: allow one non-doc-triggering iOS Smoke run to complete and verify green result. If build still fails, use latest failure log for focused remediation.
+
 ## Cycle — 2026-02-17 03:51 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
