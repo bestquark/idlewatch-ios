@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="${ROOT_DIR}/docs/qa/artifacts"
 PREP_SCRIPT="${ROOT_DIR}/scripts/prepare_ios_smoke_report.sh"
 VALIDATE_SCRIPT="${ROOT_DIR}/scripts/validate_runtime.sh"
+LINK_SCRIPT="${ROOT_DIR}/scripts/link_ios_smoke_artifacts.sh"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -65,6 +66,17 @@ fi
     echo "> Next step: run this same script on a Flutter-enabled macOS host with iOS simulator/device access."
   fi
 } >> "${report_path}"
+
+echo "[idlewatch-ios] Linking artifacts into QA log..."
+set +e
+link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" 2>&1)"
+link_code=$?
+set -e
+printf '%s\n' "${link_output}"
+if [[ ${link_code} -ne 0 ]]; then
+  echo "[idlewatch-ios] Warning: failed to auto-link artifacts into QA log." >&2
+  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\"" >&2
+fi
 
 echo "[idlewatch-ios] Smoke workflow complete."
 echo "[idlewatch-ios] Report: ${report_path}"

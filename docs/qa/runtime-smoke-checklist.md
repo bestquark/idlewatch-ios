@@ -2,7 +2,7 @@
 
 Use this after runtime validation passes in a Flutter-enabled environment.
 
-Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs validation + appends preflight metadata).
+Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs validation + appends preflight metadata + links artifacts into `docs/qa/ios-qa-log.md`).
 
 Manual alternative: run `scripts/prepare_ios_smoke_report.sh` and `scripts/validate_runtime.sh` separately.
 
@@ -25,3 +25,9 @@ Include:
 - `flutter test` result
 - Any flaky tests or timing caveats
 - Smoke checklist pass/fail summary
+
+If needed, you can manually link artifacts into the QA log:
+
+```bash
+scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path>
+```

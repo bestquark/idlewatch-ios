@@ -75,7 +75,8 @@ scripts/run_ios_smoke_workflow.sh
 This helper will:
 - generate a timestamped smoke report template,
 - run `flutter --version`, `flutter pub get`, `flutter analyze`, and `flutter test`,
-- auto-append preflight metadata + validation artifact path into the smoke report.
+- auto-append preflight metadata + validation artifact path into the smoke report,
+- auto-link the latest smoke artifacts into `docs/qa/ios-qa-log.md`.
 
 Manual mode is still available:
 
@@ -86,6 +87,12 @@ scripts/prepare_ios_smoke_report.sh
 
 After validation, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
 in `docs/qa/ios-qa-log.md` (linking both the validation log and smoke report artifact paths).
+
+If automatic linkage fails, run:
+
+```bash
+scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path>
+```
 
 ## Firestore Schema
 
