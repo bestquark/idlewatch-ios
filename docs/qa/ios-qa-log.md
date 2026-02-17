@@ -1,3 +1,34 @@
+## Cycle — 2026-02-17 04:50 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Capture concrete perf envelope values from available iOS simulator while preserving prototype runnability.
+_Method_: Run live app on available iOS 26.2 simulator, capture `idlewatch-perf` telemetry, and update QA artifact backlog notes.
+
+### Implementation Summary
+- ✅ Captured live `idlewatch-perf` telemetry from `flutter run` on the available iPhone 17 Pro simulator.
+- ✅ Recorded concrete timings in new QA artifacts:
+  - `/docs/qa/artifacts/ios-perf-capture-20260217-045050.md`
+  - `/docs/qa/artifacts/ios-smoke-report-20260217-045050.md`
+- ✅ Kept app runtime behavior unchanged; only QA/runtime measurement artifacts were added.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P4 — Capture lower-end/older-device performance envelope for onboarding & first-render
+- **Previous**: ⏳ Open
+- **Now**: ⏳ Open
+- **Reason**: Baseline telemetry is now concrete on iPhone 17 Pro, but slower/older-device coverage is still missing.
+- **Evidence this cycle**:
+  - iOS device telemetry captured: `bootstrap_init_ms=134`, `auth_sign_in_ms=35`, `dashboard_first_render_ms=118` (all pass budgets).
+  - Perf artifact: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-perf-capture-20260217-045050.md`
+  - Smoke report template updated with performance notes: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-045050.md`
+- **Acceptance criteria**:
+  - Repeat this capture on a slower/older iPhone profile.
+  - Record retry-helper/recovery path latency (`loading_helper`, `loading_retry`, `dashboard_retry_recovery`) and decide pass/fail vs 10s/30s/30s budgets.
+
+### Validation Notes
+- App remains runnable with no runtime behavior changes.
+- `flutter run` succeeded on simulator and emitted expected perf signals.
+
+
 ## Cycle — 2026-02-17 04:44 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Implement highest-priority feasible P3 perf envelope item without changing runtime behavior.
