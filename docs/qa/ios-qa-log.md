@@ -1,3 +1,50 @@
+## Cycle — 2026-02-17 02:31 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: UX/auth/onboarding/performance health check using latest local runtime smoke artifacts
+
+### Summary
+- ✅ Runtime validation remains **pass** in local host checks at 01:50.
+- ✅ Test coverage for auth and loading-recovery paths remains current: sign-in helper timing, retry CTA, and loading helper/retry states are passing.
+- ⏳ GitHub iOS smoke run remains **in progress/pending** on `main` and is still required for full release confidence and final closure criteria.
+- ✅ No app/runtime logic changes were needed in this QA cycle; only documentation and evidence upkeep.
+
+### Prioritized Issues (UX/Auth/Onboarding/Performance)
+
+#### P1 — Remote iOS smoke CI not yet green on `main` after latest fixes
+- **Area**: Release confidence (cross-cutting for UX/auth/onboarding/performance validation)
+- **Impact**: UX/auth/onboarding improvements remain unratified externally until the CI gate is green.
+- **Evidence this cycle**:
+  - Runtime validation log: `docs/qa/artifacts/runtime-validation-20260217-015014.log`
+  - Smoke artifact: `docs/qa/artifacts/ios-smoke-report-20260217-015014.md`
+  - Host preflight log: `docs/qa/artifacts/ios-host-preflight-20260217-015014.log`
+- **Acceptance criteria**:
+  - Latest `iOS Smoke` workflow run on `main` completes with `conclusion: success`.
+  - Log entry explicitly references analyzer pass, all widget tests, and simulator smoke execution.
+  - QA log updated with run URL and P1 marked closed.
+
+#### P2 — Onboarding/auth UX edge-case recovery still partially unverified in CI evidence
+- **Area**: UX/Auth onboarding resilience
+- **Impact**: Current evidence confirms helper and retry behavior by tests, but manual CI-backed confirmation is still pending.
+- **Acceptance criteria**:
+  - CI-backed smoke report includes completion of the auth-gate flow and retry behavior steps.
+  - Evidence includes positive/negative network-path behavior (e.g., transient auth delay and recover path).
+  - New cycle only if regression is detected; otherwise add "observed stable" confirmation.
+
+#### P3 — Performance envelope for iPhone lower-end devices still needs quantified measurement
+- **Area**: Performance
+- **Impact**: No quantified frame/latency budget currently captured for onboarding/load-heavy paths on older iPhones.
+- **Acceptance criteria**:
+  - Record startup latency and first-chart render time on at least one older iPhone baseline in `ios-smoke-report`.
+  - Confirm no visible loading regressions (spinners/timeouts/retries) beyond current 10s/30s thresholds.
+  - Confirm no blocking UI during 24h activity query under realistic sample load.
+
+### Validation Notes
+- `flutter analyze`: clean (no issues)
+- `flutter test`: all 16 tests passed
+- Runtime status: preflight ready; validation pass (local)
+
+---
+
 ## Cycle — 2026-02-17 01:58 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Status check — no code changes needed
