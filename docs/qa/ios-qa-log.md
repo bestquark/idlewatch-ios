@@ -3455,3 +3455,30 @@ Current highest risks have shifted to **secondary loading UX** and **Firestore r
 2. Right-size activity query strategy for 24h pie computation.
 3. Add retry CTA to `_ErrorState` and verify transient failure recovery path on-device.
 4. Run smoke on iPhone SE + large-screen iPhone and document frame/read behavior.
+
+---
+
+## Cycle — 2026-02-17 05:11 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: Regression + open-issue revalidation
+_Method_: Static audit of `lib/main.dart` (no Flutter runtime in this environment)
+
+### Executive Summary
+No code changes since last cycle (HEAD `4a3b222`). All three prioritized open issues remain unaddressed in source. Perf harness scaffolding from last commit is in place but does not resolve UX gaps.
+
+### Open Issues (unchanged)
+| Pri | Issue | Status |
+|-----|-------|--------|
+| P2 | Activity pie spinner has no timeout/retry UX | Open — `CircularProgressIndicator()` still bare at L1555 |
+| P2 | Activity query `limit(2000)` over-fetches for 24h pie | Open — no timestamp-bound query added |
+| P3 | `_ErrorState` lacks retry CTA | Open — still text-only, no button wired to `_retryNonce` |
+
+### Regression Check
+- ✅ Host scoping, persistence, tooltip/time-axis, malformed-series handling intact.
+- ✅ Primary metrics progressive loading (10s helper → 30s retry) intact.
+- ✅ Perf policy constants and harness env vars present.
+
+### Recommended Next Actions
+1. Add progressive timeout + retry to activity `FutureBuilder` (parity with main stream).
+2. Scope activity query with `where('timestamp', isGreaterThan: …)` to bound reads.
+3. Wire retry button in `_ErrorState` to `_retryStream()`.
