@@ -2,6 +2,56 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 10:32 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `flutter analyze`, `flutter test`, `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 19 tests passed**.
+- ✅ Runtime validation log generated and persisted.
+- ✅ No open regressions in UX/auth/onboarding/performance paths.
+
+### Prioritized Findings & Acceptance Criteria
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Loading states should show helper copy within 10s when backend stream stalls.
+  - Retry CTA should appear by 30s when loading remains stalled.
+  - Users must never be trapped in a terminal spinner/loading state without actionable recovery controls.
+
+#### P2 — Authentication UX recovery
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Sign-in helper appears around ~10s during prolonged auth waits.
+  - Retry CTA appears around ~30s and executes a sign-in retry action.
+  - App returns to normal navigation once auth completes; no hard-stuck sign-in screen.
+
+#### P3 — Onboarding/bootstrap clarity and host selection stability
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Bootstrap flow should follow helper/retry timing policy and provide fallback guidance after threshold.
+  - Temporary host fallback must never permanently overwrite a user-selected persisted host.
+  - “No valid series” recovery path must expose host selector and allow host switching.
+
+#### P4 — Performance guardrails
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Deterministic threshold and timing tests continue to pass under supported CI/runtime conditions.
+  - No analyzer/test regressions introduced by startup/auth/onboarding code paths.
+  - Runtime validation checks continue to complete cleanly with expected pass/fail counts.
+
+### Validation Notes
+- `flutter analyze`: ✅ clean
+- `flutter test`: ✅ 19/19
+- `scripts/validate_runtime.sh`: ✅ pass
+
+### Key Artifacts
+- Runtime validation log: `docs/qa/artifacts/runtime-validation-20260217-103255.log`
+- CI smoke evidence (latest): `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`
+
 ## Cycle — 2026-02-17 10:25 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
