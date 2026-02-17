@@ -1,3 +1,45 @@
+## Cycle — 2026-02-17 00:29 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: CI-failure triage + compile-fix implementation + runtime-smoke evidence refresh
+
+### Implementation Summary
+- ✅ Triaged latest GitHub iOS smoke CI failure (`22086874207`) and identified concrete analyzer/build-breakers in `lib/main.dart`.
+- ✅ Implemented compile-fix patch in app code while keeping UX behavior unchanged:
+  - removed unused `flutter/foundation.dart` import,
+  - fixed numeric typing in `computeNormalizedActivitySeconds(...)` (`math.max(0.0, ...)`) so returned map values stay `double`,
+  - updated `SideTitleWidget` usage to current `fl_chart` API (`axisSide: meta.axisSide`).
+- ✅ Executed iOS smoke workflow/report automation for this cycle and linked latest artifacts into QA log.
+
+### Backlog Status Update
+
+#### P1 — GitHub iOS smoke CI fails on analyzer/type/API-compat errors in `lib/main.dart`
+- **Previous**: ⏳ Open
+- **Now**: ⏳ Open (mitigated; fix committed, pending post-push CI confirmation)
+- **Reason**: Failures were reproducible in CI logs and addressed in this cycle; CI confirmation will occur on the next remote run after push.
+- **Progress this cycle**:
+  - Addressed `map_value_type_not_assignable` errors around activity normalization map typing.
+  - Addressed `SideTitleWidget` signature mismatch (`axisSide` required, `meta` parameter removed).
+  - Removed one analyzer noise issue (unused import) to keep CI signal cleaner.
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
+- **Progress this cycle**:
+  - Current iOS host preflight status: **blocked**.
+  - Current workflow attempt status: **blocked (flutter/fvm missing)**.
+  - GitHub iOS smoke CI trigger status: **completed**.
+  - GitHub iOS smoke CI conclusion: **failure** (pre-fix remote state).
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-002953.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-002953.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-002953.log
+  - GitHub iOS smoke CI run: https://github.com/bestquark/idlewatch-ios/actions/runs/22086947781
+
+### Validation Notes
+- Local runtime validation remains blocked in this host due to missing Flutter/FVM.
+- Post-push validation step: confirm new GitHub iOS smoke run result for this patch.
+
 ## Cycle — 2026-02-17 00:21 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability

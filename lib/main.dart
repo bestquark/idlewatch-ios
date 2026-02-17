@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -560,8 +559,8 @@ class DashboardPage extends StatefulWidget {
     required double cronjobSeconds,
     required double subagentSeconds,
   }) {
-    var safeCron = math.max(0, cronjobSeconds);
-    var safeSubagent = math.max(0, subagentSeconds);
+    var safeCron = math.max(0.0, cronjobSeconds);
+    var safeSubagent = math.max(0.0, subagentSeconds);
     final activeTotal = safeCron + safeSubagent;
 
     if (activeTotal > _secondsPerDay) {
@@ -1132,7 +1131,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 final secondsFromStart = (value * 60).round();
                                 final labelTs = chartStartTs.add(Duration(seconds: secondsFromStart));
                                 return SideTitleWidget(
-                                  meta: meta,
+                                  axisSide: meta.axisSide,
                                   child: Text(
                                     DashboardPage._formatClock(labelTs),
                                     style: const TextStyle(fontSize: 11),
