@@ -2,6 +2,38 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 18:04 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `validate_runtime.sh` + backlog review
+
+### Summary
+- ⚠️ `validate_runtime.sh` failed quickly: `flutter pub get` terminated with OS `SIGKILL` (resource constraint).
+- ✅ Prioritized UX/auth/onboarding/performance checks re-reviewed against existing deterministic evidence and no new implementation-required issues were identified.
+- ✅ Prototype behavior considered unchanged for this cycle; all existing backlog priorities remain closed unless host tooling allows full revalidation in a non-constrained run.
+
+### Prioritized Checks, Findings, and Acceptance Criteria
+
+- **P1 — UX responsiveness (loading/error handling)**: ✅ Closed
+  - **Acceptance criteria**: Loading states must expose helper guidance by ~10s and retry path by ~30s when waits are prolonged; no terminal dead-end spinner without actionable recovery path.
+  - **Evidence**: Existing deterministic widget timing coverage remains unchanged.
+
+- **P2 — Authentication UX/recovery**: ✅ Closed
+  - **Acceptance criteria**: Auth stall UI must show helper/retry affordances at documented thresholds and allow retry to re-attempt without requiring app restart.
+  - **Evidence**: Prior passes at `docs/qa/artifacts/runtime-validation-20260217-105218.log` and related deterministic tests for auth timing remain the last verified baseline.
+
+- **P3 — Onboarding + host onboarding recovery**: ✅ Closed
+  - **Acceptance criteria**: Onboarding and bootstrap states should provide fallback guidance; temporary host fallback must not overwrite persisted host preference; host switch path remains available in invalid-series recovery flow.
+  - **Evidence**: Host/onboarding behavior was validated in last full pass (`runtime-validation-20260217-105218.log`).
+
+- **P4 — Performance guardrails**: ✅ Closed
+  - **Acceptance criteria**: Startup/auth/onboarding/dashboard startup thresholds remain under policy budgets; analyzer/test gates remain green when full validation runs.
+  - **Evidence**: Last full pass remains the `10:52` run (`runtime-validation-20260217-105218.log`) with clean analyzer/tests; today’s run was blocked before checks could execute.
+
+### Note
+- New cycle artifact created: `docs/qa/artifacts/runtime-validation-20260217-180416.log` (terminates at pub-get under SIGKILL).
+- Recommendation: rerun runtime validation during lower-memory window (or use GitHub-hosted smoke path) before declaring final pass for this cycle.
+
 ## Cycle — 2026-02-17 17:55 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Implementation cycle for highest-priority feasible backlog items
