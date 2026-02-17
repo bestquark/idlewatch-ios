@@ -1,3 +1,38 @@
+## Cycle — 2026-02-16 19:21 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX/auth/onboarding/performance regression sweep + evidence check after runtime-validation automation docs landed
+_Method_: Static code/doc/workflow review of `lib/main.dart`, `docs/qa/runtime-smoke-checklist.md`, `.github/workflows/flutter-ci.yml`; local iOS runtime execution still blocked in this environment
+
+### Executive Summary
+No new high-severity product regressions were identified in this pass. Recent host-scoping, 24h activity normalization, malformed-sample handling, and recovery-state UX improvements remain intact on static inspection.
+
+The QA backlog is still dominated by one confidence gap: **iOS runtime smoke evidence has not yet been captured from a Flutter-enabled/macOS simulator environment**.
+
+### Prioritized Open Issues
+
+### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Area**: Release confidence (UX/auth/onboarding/performance)
+- **Impact**: Static checks + CI reduce risk, but we still lack direct confirmation of interactive behavior on an iOS runtime for the most recent changes.
+- **Evidence**:
+  - Local runtime execution is blocked in this runner (no Flutter SDK available).
+  - CI workflow exists and runs `flutter analyze` + `flutter test`, but does not replace manual iOS flow verification.
+  - `docs/qa/runtime-smoke-checklist.md` is present but this log has no new completed iOS smoke artifact entry yet.
+- **Acceptance criteria**:
+  - Run `scripts/validate_runtime.sh` in a Flutter-enabled environment and attach artifact paths/output summary in this log.
+  - Execute `docs/qa/runtime-smoke-checklist.md` on iOS simulator/device and log pass/fail for: startup/auth gate, host switch, tooltip readout, 24h pie sanity, malformed-latest chips, delayed loading + retry behavior.
+  - Record any timing/perf observations (startup latency, first-stream render time) and flaky paths.
+
+### Resolved / Verified This Cycle
+- ✅ Host-scoped dashboard query + dedicated activity query remain in place.
+- ✅ 24h pie normalization logic still enforces `cron + subagent + idle = 24h`.
+- ✅ Recovery states (`_EmptyStateForHost`, `_NoValidSeriesState`, loading helper/retry) remain wired with host-switch/retry affordances.
+- ✅ Anonymous auth gate + setup retry UX remain present and coherent with onboarding copy.
+- ✅ CI guardrail exists (`flutter analyze` + `flutter test` on push/PR).
+
+### Validation Notes
+- No code changes this cycle; backlog/documentation refresh only.
+- Next highest-leverage action remains collecting real iOS runtime smoke evidence and linking artifacts in this file.
+
 ## Cycle — 2026-02-16 19:16 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
