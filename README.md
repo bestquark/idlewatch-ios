@@ -36,23 +36,21 @@ In Firebase console, create an app for:
 
 #### C. Configure platform Firebase files (prototype path)
 
-This prototype currently initializes Firebase with bare `Firebase.initializeApp()`.
-That means it relies on platform-native Firebase config files (not
-`DefaultFirebaseOptions.currentPlatform`).
+This app initializes Firebase with `DefaultFirebaseOptions.currentPlatform`.
+You should keep both platform-native config and generated FlutterFire options in sync.
 
 Set up these files:
 
-- **iOS**: add `ios/Runner/GoogleService-Info.plist`
+- **iOS**: add `ios/Runner/GoogleService-Info.plist` and keep `lib/firebase_options.dart` committed
 - **Web**: not currently scaffolded in this repo. If you add web support later, generate the Flutter web platform first and then add web Firebase config.
 
-Optional: you can still run FlutterFire CLI for future migration:
+Optional: you can regenerate Firebase options with FlutterFire CLI:
 
 ```bash
 dart pub global activate flutterfire_cli
 flutterfire configure
 ```
 
-If you later wire `lib/firebase_options.dart` into runtime bootstrap, update this README section accordingly.
 
 ### 4) Run
 
@@ -173,3 +171,14 @@ GitHub Actions workflow (`.github/workflows/flutter-ci.yml`) runs:
 - `flutter pub get`
 - `flutter analyze`
 - `flutter test` (or a no-tests placeholder message)
+
+## Enrollment UX + fleet assumptions (prototype)
+
+Signed-in iOS users can now:
+- generate a short-lived enrollment code (`enrollment_tokens` collection),
+- see a fleet list from `devices` with online/offline, last seen, and health summary.
+
+Firestore assumptions:
+- `enrollment_tokens` docs are created by authenticated users (`ownerUid`, `code`, `createdAtMs`, `expiresAtMs`).
+- Device bootstrap/redeem is expected to be completed by backend logic (Cloud Function/API) that validates code and writes device identity/heartbeat into `devices`.
+- `devices` docs expose at least: `ownerUid`, `hostId|hostName`, `deviceId|deviceName`, `lastSeenTs`, optional `healthStatus`, `latestCpuPct`, `latestMemPct`.
