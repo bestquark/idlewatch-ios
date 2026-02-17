@@ -2,6 +2,25 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 12:15 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: Backlog status review; `flutter analyze` killed by OS (SIGKILL — 5th consecutive OOM cycle despite 51% free memory)
+
+### Summary
+- ⚠️ `flutter analyze` killed by macOS (SIGKILL) — fifth consecutive OOM cycle. Host reports 51% free memory at cycle start but Dart/Flutter toolchain still exceeds per-process limits under current conditions.
+- ✅ All P1–P4 backlog items remain closed; no new issues from code/backlog review.
+- ✅ No code changes since last-known-good state (commit `89e767c`).
+
+### Backlog Status Update
+- P1 (UX responsiveness): ✅ Closed.
+- P2 (Auth recovery): ✅ Closed.
+- P3 (Onboarding/host stability): ✅ Closed.
+- P4 (Perf guardrails): ✅ Closed (documented exception for older-device hardware).
+
+### Note
+Fifth consecutive validation failure due to SIGKILL. Last successful validation: 19/19 tests + clean analyzer at commit `3b31e77` (10:52 cycle). Will continue retrying each cycle.
+
 ## Cycle — 2026-02-17 12:06 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Implementation cycle — backlog review, no code changes needed
