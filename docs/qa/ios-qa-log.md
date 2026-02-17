@@ -2,6 +2,28 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 17:43 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: Backlog status review; `validate_runtime.sh` hung on `flutter pub get` (>5 min) — 12th consecutive toolchain failure
+
+### Summary
+- ⚠️ `flutter pub get` hung indefinitely — 12th consecutive cycle unable to complete Flutter toolchain (~8+ hours).
+- ✅ No code changes since commit `924443c`. All P1–P5 backlog items remain closed.
+- ✅ Last successful full validation: 19/19 tests + clean analyzer at commit `3b31e77` (10:52 cycle).
+
+### Backlog Status Update
+| Priority | Area | Status |
+|----------|------|--------|
+| P1 | UX responsiveness | ✅ Closed |
+| P2 | Auth recovery | ✅ Closed |
+| P3 | Onboarding/host stability | ✅ Closed |
+| P4 | Perf guardrails | ✅ Closed |
+| P5 | Validation workflow resiliency | ✅ Closed |
+
+### Note
+No new risk. Persistent host resource constraint prevents toolchain execution; no code delta to validate.
+
 ## Cycle — 2026-02-17 17:36 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Implementation cycle — backlog review, no code changes needed
