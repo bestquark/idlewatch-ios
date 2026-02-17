@@ -19,7 +19,8 @@ _Method_: CI-failure triage + analyzer-fix implementation + runtime-smoke eviden
 - **Progress this cycle**:
   - Resolved remaining `map_value_type_not_assignable` path in activity normalization.
   - Removed non-blocking analyzer noise near the same area to reduce future triage friction.
-  - Verification run queued: https://github.com/bestquark/idlewatch-ios/actions/runs/22087306075
+  - Verification run queued (pre-push smoke trigger): https://github.com/bestquark/idlewatch-ios/actions/runs/22087306075
+  - Verification run queued (post-push `main` head): https://github.com/bestquark/idlewatch-ios/actions/runs/22087315870
 
 #### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
 - **Previous**: ⏳ Open (mitigated)
