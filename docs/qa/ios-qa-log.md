@@ -1,3 +1,45 @@
+## Cycle — 2026-02-17 01:12 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Runtime-smoke evidence refresh pass using existing automation workflow
+
+### Implementation Summary
+- ✅ Executed iOS smoke workflow/report automation for this cycle.
+- ✅ Linked current smoke artifacts and runtime-validation status into the QA log.
+- ✅ Kept prototype runtime/app logic unchanged (ops/docs evidence pass only).
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Remote iOS smoke CI closure pending after scaffolding restore
+- **Area**: Release confidence (gates UX/auth/onboarding/performance evidence)
+- **Previous**: ⏳ Open (mitigated; awaiting CI confirmation)
+- **Now**: ⏳ Open (awaiting CI completion)
+- **Evidence**:
+  - In-progress verification run: https://github.com/bestquark/idlewatch-ios/actions/runs/22087716875
+  - Local cycle preflight: **ready**
+  - Local cycle runtime validation: **pass**
+- **Acceptance criteria**:
+  - First green GitHub `iOS Smoke` run on `main` after scaffolding fix.
+  - QA log records the green run URL and marks P1 closed.
+
+#### P2 — Missing fresh CI-backed UX/auth/onboarding/performance runtime evidence
+- **Area**: UX/auth/onboarding/performance
+- **Previous**: ⏳ Open (blocked on P1 closure)
+- **Now**: ⏳ Open (still blocked)
+- **Reason**: Shared confidence baseline requires a completed green CI smoke run on current `main`.
+- **Evidence this cycle**:
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-011237.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-011237.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-011237.log
+- **Acceptance criteria**:
+  - CI smoke run on `main` passes analyzer + widget tests + simulator build.
+  - Smoke notes explicitly cover onboarding/auth retry flow behavior and first-render responsiveness.
+  - Any UX/auth/performance regressions are split into prioritized P1/P2/P3 follow-up issues.
+
+### Validation Notes
+- Local environment remains healthy (`flutter`, `xcodebuild`, `simctl`, `pod` available).
+- Prototype runtime/app logic unchanged; this cycle updates docs/evidence only.
+
 ## Cycle — 2026-02-17 01:01 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Resolve top release-gate blocker while preserving prototype runnability
