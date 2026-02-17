@@ -32,6 +32,30 @@ class IdleWatchPerformancePolicy {
   }
 }
 
+class _PerfTestHarnessConfig {
+  static const String _bootstrapDelayMsRaw =
+      String.fromEnvironment('IDLEWATCH_BOOTSTRAP_DELAY_MS', defaultValue: '0');
+  static const String _authDelayMsRaw =
+      String.fromEnvironment('IDLEWATCH_AUTH_DELAY_MS', defaultValue: '0');
+  static const String _dashboardDelayMsRaw =
+      String.fromEnvironment('IDLEWATCH_DASHBOARD_DELAY_MS', defaultValue: '0');
+
+  static const bool enableDashboardAutoRetry = bool.fromEnvironment(
+    'IDLEWATCH_DASHBOARD_AUTO_RETRY',
+    defaultValue: false,
+  );
+
+  static final int bootstrapDelayMs = _parseMs(_bootstrapDelayMsRaw);
+  static final int authDelayMs = _parseMs(_authDelayMsRaw);
+  static final int dashboardDelayMs = _parseMs(_dashboardDelayMsRaw);
+
+  static int _parseMs(String raw) {
+    final parsed = int.tryParse(raw);
+    if (parsed == null || parsed < 0) return 0;
+    return parsed;
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const IdleWatchApp());
@@ -131,6 +155,12 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
       _waitSeconds = 0;
     });
     _startWaitTicker();
+
+    if (_PerfTestHarnessConfig.bootstrapDelayMs > 0) {
+      await Future.delayed(
+        Duration(milliseconds: _PerfTestHarnessConfig.bootstrapDelayMs),
+      );
+    }
 
     try {
       if (Firebase.apps.isEmpty) {
@@ -335,6 +365,12 @@ class _AuthGatePageState extends State<AuthGatePage> {
       _authWaitSeconds = 0;
     });
     _startAuthWaitTicker();
+
+    if (_PerfTestHarnessConfig.authDelayMs > 0) {
+      await Future.delayed(
+        Duration(milliseconds: _PerfTestHarnessConfig.authDelayMs),
+      );
+    }
 
     try {
       await FirebaseAuth.instance.signInAnonymously();
@@ -878,10 +914,12 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _firstRenderLogged = false;
   final DateTime _dashboardStartAt = DateTime.now();
   DateTime? _retryRequestedAt;
+  DateTime? _debugDashboardDelayStartedAt;
   int _retryNonce = 0;
   String? _activityFutureHost;
   int _activityFutureRetryNonce = -1;
   Future<_ActivityBreakdown>? _activityBreakdownFuture;
+  bool _didAutoRetryDashboardDelay = false;
   bool _isGeneratingEnrollmentCode = false;
   String? _generatedEnrollmentCode;
   DateTime? _generatedEnrollmentExpiry;
@@ -890,6 +928,9 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    if (_PerfTestHarnessConfig.dashboardDelayMs > 0) {
+      _debugDashboardDelayStartedAt = DateTime.now();
+    }
     _loadPersistedHostSelection();
   }
 
@@ -944,6 +985,39 @@ class _DashboardPageState extends State<DashboardPage> {
     _loadingTicker = null;
     if (_loadingSeconds != 0) {
       _loadingSeconds = 0;
+    }
+  }
+
+  bool _shouldHoldLoadingForDelay() {
+    if (_debugDashboardDelayStartedAt == null ||
+        _PerfTestHarnessConfig.dashboardDelayMs <= 0) {
+      return false;
+    }
+
+    final elapsedMs = DateTime.now()
+        .difference(_debugDashboardDelayStartedAt!)
+        .inMilliseconds;
+    return elapsedMs < _PerfTestHarnessConfig.dashboardDelayMs;
+  }
+
+  void _triggerDebugDashboardAutoRetryIfNeeded() {
+    if (!_PerfTestHarnessConfig.enableDashboardAutoRetry) {
+      return;
+    }
+
+    if (_didAutoRetryDashboardDelay) {
+      return;
+    }
+
+    if (_loadingSeconds >= IdleWatchPerformancePolicy.loadingRetrySeconds) {
+      _didAutoRetryDashboardDelay = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        _retryStream();
+      });
     }
   }
 
@@ -1134,8 +1208,9 @@ class _DashboardPageState extends State<DashboardPage> {
             return _ErrorState(message: snapshot.error.toString());
           }
 
-          if (!snapshot.hasData) {
+          if (_shouldHoldLoadingForDelay() || !snapshot.hasData) {
             _ensureLoadingTicker();
+            _triggerDebugDashboardAutoRetryIfNeeded();
             return _LoadingState(
               elapsedSeconds: _loadingSeconds,
               onRetry: _loadingSeconds >=
@@ -1192,8 +1267,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 return _ErrorState(message: hostSnapshot.error.toString());
               }
 
-              if (!hostSnapshot.hasData) {
+              if (_shouldHoldLoadingForDelay() || !hostSnapshot.hasData) {
                 _ensureLoadingTicker();
+                _triggerDebugDashboardAutoRetryIfNeeded();
                 return _LoadingState(
                   elapsedSeconds: _loadingSeconds,
                   onRetry: _loadingSeconds >=

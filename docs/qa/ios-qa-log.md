@@ -1,3 +1,40 @@
+## Cycle — 2026-02-17 05:09 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Capture delayed-loading/retry path latency with deterministic debug harness.
+_Method_: Add iOS runtime debug delay/autoretry instrumentation hooks and run capture on available simulator.
+
+### Implementation Summary
+- ✅ Added debug-only iOS runtime harness flags to force delayed dashboard loading and auto-retry:
+  - `IDLEWATCH_DASHBOARD_DELAY_MS`
+  - `IDLEWATCH_DASHBOARD_AUTO_RETRY`
+- ✅ Captured concrete perf telemetry for loading-helper/retry/recovery path on supported simulator:
+  - `dashboard_loading_helper_delay_seconds=10000`
+  - `dashboard_loading_retry_recovery_delay_seconds=30000`
+  - `dashboard_retry_recovery_ms=5078`
+- ✅ New artifact logged:
+  - `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-perf-capture-20260217-050930.md`
+- ✅ Kept prototype runtime behavior unchanged for normal runs (all harness hooks are opt-in via `--dart-define`).
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P4 — Capture lower-end/older-device performance envelope for onboarding & first-render
+- **Previous**: ⏳ Open
+- **Now**: ⚠️ Partial (delayed-path capture complete; older-device capture pending)
+- **Reason**: Retry-helper/recovery timing is now captured deterministically, but Flutter runtime on this host currently exposes only `iPhone 17 Pro` as a supported simulator.
+- **Evidence this cycle**:
+  - Perf artifact: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-perf-capture-20260217-050930.md`
+  - Observed delayed-path signals: `loading_helper=10000ms`, `loading_retry=30000ms`, `dashboard_retry_recovery=5078ms`
+  - `dashboard_first_render_ms=35099ms` was intentionally inflated by forced delay and marked warn
+- **Acceptance criteria**:
+  - ❗ **Remaining**: repeat capture on slower/older iPhone profile when a supported lower-end simulator is available.
+  - Keep this run marked in backlog as completed for `loading_helper/loading_retry/dashboard_retry_recovery` timing capture.
+
+### Validation Notes
+- `flutter analyze` ✅
+- `flutter test` ✅
+- Deliberate runtime delay/autoretry path is opt-in and default-off.
+
+
 ## Cycle — 2026-02-17 04:50 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Capture concrete perf envelope values from available iOS simulator while preserving prototype runnability.
