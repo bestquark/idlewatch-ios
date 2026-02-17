@@ -1,3 +1,33 @@
+## Cycle — 2026-02-16 19:16 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: QA-operability implementation pass (runtime validation automation + checklist); local Flutter runtime still unavailable in this environment
+
+### Implementation Summary
+Addressed the highest-priority remaining open thread (**runtime validation gap**) with feasible, low-risk improvements that keep prototype runnability intact:
+
+- ✅ Added `scripts/validate_runtime.sh` to standardize runtime validation in Flutter-enabled environments.
+  - Runs: `flutter --version`, `flutter pub get`, `flutter analyze`, `flutter test`.
+  - Writes timestamped artifacts to `docs/qa/artifacts/` for traceability.
+  - Fails fast with actionable guidance when Flutter CLI is missing.
+
+- ✅ Added `docs/qa/runtime-smoke-checklist.md` for deterministic manual iOS smoke verification.
+  - Captures startup, host switch, chart tooltip, 24h pie sanity, malformed-latest chips, and delayed-loading/retry states.
+
+- ✅ Updated `README.md` with a runtime-validation section wiring both the script and checklist into contributor workflow.
+
+### Backlog Status Update
+
+#### P2 — Runtime validation still blocked in this QA environment
+- **Previous**: Open
+- **Now**: ⏳ Open (mitigated)
+- **Reason**: This runner still lacks Flutter SDK, so execute-time validation cannot be completed here.
+- **Progress this cycle**: Validation path is now scripted/documented, so any Flutter-enabled host can produce reproducible analyze/test + smoke artifacts quickly.
+
+### Validation Notes
+- Could not execute `flutter analyze` / `flutter test` in this environment (`flutter` CLI unavailable).
+- Changes are additive (script/docs only) and do not alter app runtime logic.
+
 ## Cycle — 2026-02-16 19:01 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX/auth/onboarding/performance regression sweep after latest P1 data-window fixes

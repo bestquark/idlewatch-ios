@@ -64,6 +64,18 @@ flutter run -d ios
 If Firebase config is missing/invalid, the app shows a setup error screen instead
 of crashing.
 
+### 5) Runtime validation (recommended before merge/release)
+
+```bash
+scripts/validate_runtime.sh
+```
+
+This script runs `flutter --version`, `flutter pub get`, `flutter analyze`, and
+`flutter test`, and writes an artifact log under `docs/qa/artifacts/`.
+
+After that, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
+in `docs/qa/ios-qa-log.md`.
+
 ## Firestore Schema
 
 Collection: `metrics`
