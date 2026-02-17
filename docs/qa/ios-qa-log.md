@@ -1,3 +1,57 @@
+## Cycle — 2026-02-17 09:51 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: QA cycle for `idlewatch-ios` Flutter app, with emphasis on UX/Auth/Onboarding/Performance status refresh.
+_Method_: Flutter analyze + Flutter test + prior backlog reconciliation.
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All tests passed** (all 19 tests).
+- ✅ No runtime code changes in this cycle; validation confirms existing onboarding/auth/perf UX invariants are intact.
+- ⚠️ No new older/slower-device performance capture executed in this cycle (pending hardware/profile availability).
+
+### Prioritized Issues (UX/Auth/Onboarding/Performance)
+
+#### P1 — Maintain remote iOS smoke closure evidence
+- **Status**: ✅ Closed
+- **Current state**: Latest green smoke reference remains current: `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`.
+- **Acceptance criteria**:
+  - Keep the latest green iOS Smoke run URL updated in this log when flow, test, or workflow changes occur.
+  - If onboarding/auth behavior changes materially, add a fresh smoke artifact reference in the same cycle.
+
+#### P2 — Preserve onboarding/auth clarity and recovery UX
+- **Status**: ✅ Closed
+- **Current state**: Sign-in helper/retry timing + onboarding recovery states remain implemented and validated by tests.
+- **Acceptance criteria**:
+  - Onboarding/auth sequences continue to present explicit helper and retry states for signing-in and recovery.
+  - Any change to auth/onboarding copy/flow updates this log with evidence and validation references.
+
+#### P3 — Maintain onboarding/performance guardrails and thresholds
+- **Status**: ✅ Closed
+- **Current state**: Timing policy, runtime signal names, and deterministic tests for helper/retry behavior remain in place and passing.
+- **Acceptance criteria**:
+  - Keep onboarding/performance guardrail names and thresholds discoverable in `docs/qa/` artifacts/tests.
+  - Update this log whenever thresholds, signal names, or acceptance checks change.
+  - Confirm each cycle that 10s helper and 30s retry behavior are still tested and pass.
+
+#### P4 — Expand older/low-end onboarding/performance coverage
+- **Status**: ⚠️ Partial
+- **Current state**: No older/slower-device perf capture executed in this cycle. The lower-end simulator candidate is already identified (`iPhone 16e`) but the target capture is still pending.
+- **Acceptance criteria**:
+  - Execute at least one older/slower iOS profile capture.
+  - Record and evaluate values for:
+    - `bootstrap_init_ms`
+    - `auth_sign_in_ms`
+    - `dashboard_first_render_ms`
+    - `loading_helper`
+    - `loading_retry`
+    - `dashboard_retry_recovery_ms`
+  - Mark this issue ✅ Closed only with pass evidence or documented exception.
+
+### Validation Notes
+- `flutter analyze`: ✅
+- `flutter test`: ✅
+- Commit scope: docs-only (`docs/qa/ios-qa-log.md`).
+
 ## Cycle — 2026-02-17 09:30 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Highest-priority QA-cycle hardening while preserving prototype runnability.
