@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ios-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ios-simulator-smoke:
     runs-on: macos-latest
@@ -35,4 +39,5 @@ jobs:
           flutter test
 
       - name: iOS simulator build smoke
-        run: flutter build ios --simulator --debug
+        timeout-minutes: 20
+        run: flutter build ios --simulator --debug --no-codesign

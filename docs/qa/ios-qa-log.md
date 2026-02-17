@@ -1,3 +1,81 @@
+## Cycle — 2026-02-17 01:23 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Unblock highest-priority CI release gate while preserving prototype runnability
+_Method_: CI hardening for iOS smoke workflow + fresh local runtime validation evidence
+
+### Implementation Summary
+- ✅ Implemented CI hardening in `.github/workflows/ios-smoke.yml` to reduce stuck/overlapping smoke runs:
+  - added workflow `concurrency` (`cancel-in-progress: true`) to prevent stacked stale runs on `main`.
+  - added `timeout-minutes: 20` for the simulator build-smoke step to fail fast instead of hanging indefinitely.
+  - switched simulator build command to `flutter build ios --simulator --debug --no-codesign` for CI-friendly behavior.
+- ✅ Re-ran local smoke workflow on this host (preflight **ready**, runtime validation **pass**) and captured fresh artifacts.
+- ✅ Preserved prototype runnability (no app-runtime logic changes; CI/workflow + QA evidence updates only).
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Remote iOS smoke CI closure pending after scaffolding restore
+- **Area**: Release confidence (gates UX/auth/onboarding/performance evidence)
+- **Previous**: ⏳ Open (awaiting CI completion)
+- **Now**: ⏳ Open (further mitigated; stale/overlap risk reduced)
+- **Evidence**:
+  - New post-hardening verification run (pending): https://github.com/bestquark/idlewatch-ios/actions/runs/22088228695
+  - Older pre-hardening runs still in progress and expected to be superseded/cancelled by concurrency control.
+  - CI hardening landed to prevent overlapping/stuck run pileups in subsequent executions.
+  - Local cycle preflight: **ready**
+  - Local cycle runtime validation: **pass**
+- **Acceptance criteria**:
+  - First green GitHub `iOS Smoke` run on `main` after this workflow hardening commit.
+  - QA log records the green run URL and marks P1 closed.
+
+#### P2 — Missing fresh CI-backed UX/auth/onboarding/performance runtime evidence
+- **Area**: UX/auth/onboarding/performance
+- **Previous**: ⏳ Open (blocked on P1 closure)
+- **Now**: ⏳ Open (still blocked on green CI smoke)
+- **Evidence this cycle**:
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-012247.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-012247.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-012248.log
+- **Acceptance criteria**:
+  - CI smoke run on `main` passes analyzer + widget tests + simulator build.
+  - Smoke notes explicitly cover onboarding/auth retry flow behavior and first-render responsiveness.
+  - Any UX/auth/performance regressions are split into prioritized P1/P2/P3 follow-up issues.
+
+### Validation Notes
+- Local environment remains healthy (`flutter`, `xcodebuild`, `simctl`, `pod` available).
+- Prototype runtime/app logic unchanged; this cycle updates CI control flow + evidence documentation only.
+
+## Cycle — 2026-02-17 01:22 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Runtime-smoke evidence refresh pass using existing automation workflow
+
+### Implementation Summary
+- ✅ Executed iOS smoke workflow/report automation for this cycle.
+- ✅ Linked current smoke artifacts and runtime-validation status into the QA log.
+- ✅ Kept prototype runtime/app logic unchanged (ops/docs evidence pass only).
+
+### Backlog Status Update
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
+- **Progress this cycle**:
+  - QA log linkage is now automated, reducing missed artifact references.
+  - Current iOS host preflight status: **ready**.
+  - Current workflow attempt status: **pass**.
+  - GitHub iOS smoke CI trigger status: **not triggered**.
+  - GitHub iOS smoke CI conclusion: **pending**.
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-012247.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-012247.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-012248.log
+  - GitHub iOS smoke CI run: (not triggered)
+
+### Validation Notes
+- Prototype runtime/app logic unchanged; updates are scripts/docs only.
+- If validation remains blocked/failing here, rerun on Flutter-enabled macOS host:
+  - scripts/run_ios_smoke_workflow.sh
+
 ## Cycle — 2026-02-17 01:12 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
