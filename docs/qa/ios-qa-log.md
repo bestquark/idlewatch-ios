@@ -2,6 +2,62 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 10:25 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `flutter analyze`, `flutter test`, review of latest regression artifacts.
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 19 tests passed**.
+- ✅ No new regressions observed in UX/auth/onboarding/performance.
+- ✅ Logged current cycle with acceptance criteria for ongoing checks.
+
+### Prioritized Findings & Acceptance Criteria
+
+#### P1 — UX responsiveness in data loading states
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - New loading flow displays helper copy after ~10 seconds of waiting and shows recovery/retry path by ~30 seconds.
+  - Recovery action is visibly reachable in all valid waiting/error states.
+  - No dead-end “loading” state is shown without either a visible helper or retry control.
+- **Current evidence**: Deterministic tests confirm helper/retry timing and callbacks at expected thresholds.
+
+#### P2 — Authentication recovery and visibility
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Sign-in helper appears around 10 seconds and remains visible if auth is still pending.
+  - Retry CTA appears around 30 seconds and executes callback when tapped.
+  - Auth timeout does not prevent normal navigation once service responds.
+- **Current evidence**: `flutter test` coverage for auth gate and helper/retry timing remains green (Tests 10–13).
+
+#### P3 — Onboarding/bootstrap clarity and host fallback behavior
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Bootstrap helper/retry states follow documented thresholds and do not regress.
+  - Host fallback behavior does not overwrite persisted host when fallback is temporary.
+  - Host selector remains available in “no valid series” recovery state and user can switch host.
+- **Current evidence**: Tests covering onboarding/bootstrap and host-selection behavior continue to pass (Tests 16, 17, 7–9).
+
+#### P4 — Performance and startup guardrails
+- **Status**: ✅ Resolved / no open issues
+- **Acceptance criteria**:
+  - Existing performance budgets (bootstrap/auth/dashboard thresholds) remain green on supported simulators.
+  - No analyzer/runtime warning patterns introduced by new code paths.
+  - CI/build remains green for smoke gate and test suite.
+- **Current evidence**: Previous artifact captures remain within thresholds; current cycle had no analyzer/test regressions.
+
+### Validation Notes
+- `flutter analyze`: ✅ clean
+- `flutter test`: ✅ 19/19
+- Git impact: docs-only QA log update
+
+### Key Artifacts
+- Perf capture (iPhone 17 Pro): `docs/qa/artifacts/ios-perf-capture-20260217-045050.md`
+- Perf capture (deterministic harness): `docs/qa/artifacts/ios-perf-capture-20260217-050930.md`
+- CI smoke evidence: `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`
+- Full QA history: `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
+
 ## Cycle — 2026-02-17 10:00 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Close remaining P4 item with documented exception; consolidate QA log.
