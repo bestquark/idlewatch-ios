@@ -2,6 +2,8 @@
 
 Use this after `scripts/validate_runtime.sh` passes in a Flutter-enabled environment.
 
+Tip: run `scripts/prepare_ios_smoke_report.sh` first to generate a timestamped report template under `docs/qa/artifacts/`.
+
 ## Simulator/device smoke pass
 
 1. App launches to dashboard without crash.

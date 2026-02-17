@@ -73,8 +73,14 @@ scripts/validate_runtime.sh
 This script runs `flutter --version`, `flutter pub get`, `flutter analyze`, and
 `flutter test`, and writes an artifact log under `docs/qa/artifacts/`.
 
+Then create a timestamped smoke report template:
+
+```bash
+scripts/prepare_ios_smoke_report.sh
+```
+
 After that, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
-in `docs/qa/ios-qa-log.md`.
+in `docs/qa/ios-qa-log.md` (linking both the validation log and smoke report artifact paths).
 
 ## Firestore Schema
 
