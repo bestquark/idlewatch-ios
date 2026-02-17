@@ -7,9 +7,11 @@ QA_LOG="${ROOT_DIR}/docs/qa/ios-qa-log.md"
 report_path="${1:-}"
 validation_status="${2:-unknown}"
 validation_log="${3:-}"
+preflight_status="${4:-unknown}"
+preflight_log="${5:-}"
 
 if [[ -z "${report_path}" ]]; then
-  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path]" >&2
+  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path] [preflight-status] [preflight-log-path]" >&2
   exit 1
 fi
 
@@ -23,6 +25,11 @@ now_human="$(TZ=America/Toronto date '+%Y-%m-%d %H:%M America/Toronto')"
 validation_log_line="- Runtime validation log: (not found)"
 if [[ -n "${validation_log}" ]]; then
   validation_log_line="- Runtime validation log: ${validation_log}"
+fi
+
+preflight_log_line="- iOS host preflight log: (not found)"
+if [[ -n "${preflight_log}" ]]; then
+  preflight_log_line="- iOS host preflight log: ${preflight_log}"
 fi
 
 entry_file="$(mktemp)"
@@ -45,8 +52,10 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
 - **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
 - **Progress this cycle**:
   - QA log linkage is now automated, reducing missed artifact references.
+  - Current iOS host preflight status: **${preflight_status}**.
   - Current workflow attempt status: **${validation_status}**.
   - Smoke report artifact: ${report_path}
+  ${preflight_log_line}
   ${validation_log_line}
 
 ### Validation Notes

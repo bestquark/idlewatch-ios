@@ -95,13 +95,13 @@ fi
 
 echo "[idlewatch-ios] Linking artifacts into QA log..."
 set +e
-link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" 2>&1)"
+link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" "${preflight_status}" "${preflight_log}" 2>&1)"
 link_code=$?
 set -e
 printf '%s\n' "${link_output}"
 if [[ ${link_code} -ne 0 ]]; then
   echo "[idlewatch-ios] Warning: failed to auto-link artifacts into QA log." >&2
-  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\"" >&2
+  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\" \"${preflight_status}\" \"${preflight_log}\"" >&2
 fi
 
 echo "[idlewatch-ios] Smoke workflow complete."
