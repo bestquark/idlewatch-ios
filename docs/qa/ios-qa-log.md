@@ -2,6 +2,62 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 10:52 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `flutter analyze`, `flutter test`, `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 19 tests passed**.
+- ✅ `scripts/validate_runtime.sh`: **Pass**.
+- ✅ No new regressions in prioritized UX/auth/onboarding/performance checks.
+- ✅ Runtime artifact captured: `docs/qa/artifacts/runtime-validation-20260217-105218.log`.
+
+### Prioritized Findings & Acceptance Criteria
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Resolved / no open issues.
+- **Acceptance criteria**:
+  - Loading helper copy appears around 10s during stall conditions.
+  - Retry CTA appears around 30s if loading remains blocked.
+  - No dead-end loading state (helper or retry always becomes available).
+- **Evidence**:
+  - Deterministic widget tests remain green (`Tests 12, 13, 14, 15`).
+
+#### P2 — Authentication UX recovery
+- **Status**: ✅ Resolved / no open issues.
+- **Acceptance criteria**:
+  - Sign-in helper appears after prolonged auth wait (~10s).
+  - Retry action appears after ~30s and invokes its callback.
+  - Successful sign-in transitions to normal flow when backend recovers.
+- **Evidence**:
+  - Auth timing/retry tests remain green (`Tests 10, 11`).
+
+#### P3 — Onboarding clarity and host recovery
+- **Status**: ✅ Resolved / no open issues.
+- **Acceptance criteria**:
+  - Bootstrap helper/retry states appear after policy thresholds.
+  - Temporary host fallback never overwrites persisted host preference.
+  - “No valid series” screen still exposes host selector with working host-switch path.
+- **Evidence**:
+  - Host/bootstrap tests remain green (`Tests 7, 8, 9, 16, 17`).
+
+#### P4 — Performance and startup guardrails
+- **Status**: ✅ Resolved / no open issues.
+- **Acceptance criteria**:
+  - Analyzer clean in CI (`flutter analyze` no issues).
+  - Test suite completes (`flutter test` full pass).
+  - Runtime gate script completes and records timing checks successfully.
+- **Evidence**:
+  - Runtime log: `docs/qa/artifacts/runtime-validation-20260217-105218.log`.
+
+### Validation Notes
+- `flutter analyze`: ✅ clean
+- `flutter test`: ✅ 19/19
+- `scripts/validate_runtime.sh`: ✅ pass
+
+
 ## Cycle — 2026-02-17 10:48 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Implementation cycle for highest-priority feasible backlog items (prototype-safe)
