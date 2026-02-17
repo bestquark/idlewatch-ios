@@ -44,6 +44,9 @@ else
   validation_status="blocked (flutter/fvm missing)"
 fi
 
+validation_code=0
+validation_output=""
+
 echo "[idlewatch-ios] Running iOS host preflight..."
 set +e
 preflight_output="$(${PREFLIGHT_SCRIPT} 2>&1)"
@@ -58,25 +61,32 @@ if [[ -z "${preflight_log}" ]]; then
   preflight_log="$(ls -t "${ARTIFACT_DIR}"/ios-host-preflight-*.log 2>/dev/null | head -n1 || true)"
 fi
 
-echo "[idlewatch-ios] Running runtime validation..."
-set +e
-validation_output="$(${VALIDATE_SCRIPT} 2>&1)"
-validation_code=$?
-set -e
+if [[ "${IDLEWATCH_SKIP_RUNTIME_VALIDATION:-0}" == "1" ]]; then
+  validation_status="skipped"
+  validation_output="${report_path}: runtime validation skipped by IDLEWATCH_SKIP_RUNTIME_VALIDATION=1"
+  echo "[idlewatch-ios] Runtime validation skipped by request (IDLEWATCH_SKIP_RUNTIME_VALIDATION=1)."
+  echo "${validation_output}"
+else
+  echo "[idlewatch-ios] Running runtime validation..."
+  set +e
+  validation_output="$(${VALIDATE_SCRIPT} 2>&1)"
+  validation_code=$?
+  set -e
 
-printf '%s\n' "${validation_output}"
+  printf '%s\n' "${validation_output}"
 
-if [[ ${validation_code} -ne 0 ]]; then
-  if [[ ${validation_code} -eq 127 ]]; then
-    validation_status="blocked (flutter/fvm missing)"
-  elif [[ "${validation_status}" == "pass" ]]; then
-    validation_status="fail"
+  if [[ ${validation_code} -ne 0 ]]; then
+    if [[ ${validation_code} -eq 127 ]]; then
+      validation_status="blocked (flutter/fvm missing)"
+    elif [[ "${validation_status}" == "pass" ]]; then
+      validation_status="fail"
+    fi
   fi
-fi
 
-validation_log="$(printf '%s' "${validation_output}" | sed -n 's/^Saved runtime validation log to: //p' | tail -n1)"
-if [[ -z "${validation_log}" ]]; then
-  validation_log="$(ls -t "${ARTIFACT_DIR}"/runtime-validation-*.log 2>/dev/null | head -n1 || true)"
+  validation_log="$(printf '%s' "${validation_output}" | sed -n 's/^Saved runtime validation log to: //p' | tail -n1)"
+  if [[ -z "${validation_log}" ]]; then
+    validation_log="$(ls -t "${ARTIFACT_DIR}"/runtime-validation-*.log 2>/dev/null | head -n1 || true)"
+  fi
 fi
 
 echo "[idlewatch-ios] Fetching latest GitHub iOS smoke CI status..."
