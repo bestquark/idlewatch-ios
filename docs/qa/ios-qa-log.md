@@ -1,3 +1,31 @@
+## Cycle — 2026-02-16 22:47 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Host-activity 24h pagination implementation in `lib/main.dart` + deterministic unit test expansion
+
+### Implementation Summary
+- ✅ Replaced fixed-cap activity stream (`limit(2000)`) with window-aware paginated fetch for host activity breakdown.
+  - Added `hostActivityPageSize = 500` and `hostActivityMaxPages = 20` guardrails.
+  - Added `_fetchActivityBreakdown(activeHost)` that paginates host activity docs until the 24h boundary is crossed (or safety limits reached), then computes normalized pie totals.
+  - Switched activity card rendering from `StreamBuilder` to keyed `FutureBuilder` with per-host/per-retry future caching to avoid redundant fetch loops.
+- ✅ Added deterministic pagination-stop coverage in `test/activity_normalization_test.dart` via `shouldContinueActivityWindowPagination(...)` tests.
+- ✅ Kept prototype UX/run path intact outside activity-data sourcing for the 24h pie.
+
+### Backlog Status Update
+
+#### P2 — Activity pie can still undercount in high-frequency hosts due to fixed `hostActivityLimit`
+- **Previous**: ⏳ Open
+- **Now**: ✅ Resolved
+- **Reason**: Activity sourcing no longer depends on a fixed 2000-doc cap; fetch now paginates until the 24h window is covered (bounded by max pages for safety).
+
+#### P2 — iOS runtime smoke evidence remains blocked in current host
+- **Status**: ⏳ Open
+- **Reason**: Flutter/FVM + CocoaPods unavailable in current environment.
+
+### Validation Notes
+- Could not execute `flutter analyze` / `flutter test` in this environment (toolchain unavailable).
+- Static review indicates no prototype-breaking changes; behavior change is isolated to activity pie data retrieval path.
+
 ## Cycle — 2026-02-16 22:42 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability

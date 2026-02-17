@@ -293,7 +293,8 @@ class DashboardPage extends StatefulWidget {
 
   static const int _secondsPerDay = 24 * 60 * 60;
   static const int hostSeriesLimit = 240;
-  static const int hostActivityLimit = 2000;
+  static const int hostActivityPageSize = 500;
+  static const int hostActivityMaxPages = 20;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -347,6 +348,34 @@ class DashboardPage extends StatefulWidget {
       idleSeconds: normalized['idleSeconds']!,
       hasActivityData: observedActivityDoc,
     );
+  }
+
+  @visibleForTesting
+  static bool shouldContinueActivityWindowPagination({
+    required List<Map<String, dynamic>> pageEntries,
+    required DateTime now,
+    required int pageSize,
+  }) {
+    if (pageEntries.length < pageSize) {
+      return false;
+    }
+
+    final windowStart = now.subtract(const Duration(hours: 24));
+    final oldestTs = pageEntries
+        .map((entry) => _asDateTime(entry['ts']))
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (oldest, ts) {
+      if (oldest == null || ts.isBefore(oldest)) {
+        return ts;
+      }
+      return oldest;
+    });
+
+    if (oldestTs == null) {
+      return true;
+    }
+
+    return !oldestTs.isBefore(windowStart);
   }
 
   static _ActivitySource? _activitySource(Map<String, dynamic> data) {
@@ -712,6 +741,9 @@ class _DashboardPageState extends State<DashboardPage> {
   Timer? _loadingTicker;
   int _loadingSeconds = 0;
   int _retryNonce = 0;
+  String? _activityFutureHost;
+  int _activityFutureRetryNonce = -1;
+  Future<_ActivityBreakdown>? _activityBreakdownFuture;
 
   @override
   void initState() {
@@ -776,7 +808,61 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       _retryNonce += 1;
       _loadingSeconds = 0;
+      _activityBreakdownFuture = null;
+      _activityFutureHost = null;
+      _activityFutureRetryNonce = -1;
     });
+  }
+
+  Future<_ActivityBreakdown> _fetchActivityBreakdown(String activeHost) async {
+    final now = DateTime.now();
+    final query = FirebaseFirestore.instance
+        .collection('metrics')
+        .where('host', isEqualTo: activeHost)
+        .orderBy('ts', descending: true);
+
+    final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    QueryDocumentSnapshot<Map<String, dynamic>>? cursor;
+
+    for (var page = 0; page < DashboardPage.hostActivityMaxPages; page++) {
+      var pageQuery = query.limit(DashboardPage.hostActivityPageSize);
+      if (cursor != null) {
+        pageQuery = pageQuery.startAfterDocument(cursor);
+      }
+
+      final snapshot = await pageQuery.get();
+      if (snapshot.docs.isEmpty) {
+        break;
+      }
+
+      docs.addAll(snapshot.docs);
+      cursor = snapshot.docs.last;
+
+      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+        pageEntries: snapshot.docs.map((doc) => doc.data()).toList(),
+        now: now,
+        pageSize: DashboardPage.hostActivityPageSize,
+      );
+      if (!shouldContinue) {
+        break;
+      }
+    }
+
+    return DashboardPage._buildActivityBreakdown(docs);
+  }
+
+  Future<_ActivityBreakdown> _ensureActivityBreakdownFuture(String activeHost) {
+    if (_activityBreakdownFuture != null &&
+        _activityFutureHost == activeHost &&
+        _activityFutureRetryNonce == _retryNonce) {
+      return _activityBreakdownFuture!;
+    }
+
+    final future = _fetchActivityBreakdown(activeHost);
+    _activityFutureHost = activeHost;
+    _activityFutureRetryNonce = _retryNonce;
+    _activityBreakdownFuture = future;
+    return future;
   }
 
   @override
@@ -846,11 +932,7 @@ class _DashboardPageState extends State<DashboardPage> {
               .orderBy('ts', descending: true)
               .limit(DashboardPage.hostSeriesLimit);
 
-          final hostActivityQuery = FirebaseFirestore.instance
-              .collection('metrics')
-              .where('host', isEqualTo: activeHost)
-              .orderBy('ts', descending: true)
-              .limit(DashboardPage.hostActivityLimit);
+          final activityBreakdownFuture = _ensureActivityBreakdownFuture(activeHost);
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             key: ValueKey('metrics-host-series-$activeHost-$_retryNonce'),
@@ -960,9 +1042,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                   const SizedBox(height: 20),
-                  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  FutureBuilder<_ActivityBreakdown>(
                     key: ValueKey('metrics-host-activity-$activeHost-$_retryNonce'),
-                    stream: hostActivityQuery.snapshots(),
+                    future: activityBreakdownFuture,
                     builder: (context, activitySnapshot) {
                       if (activitySnapshot.hasError) {
                         return _ActivityPieCard(
@@ -984,10 +1066,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         );
                       }
 
-                      final activity = DashboardPage._buildActivityBreakdown(
-                        activitySnapshot.data!.docs,
-                      );
-                      return _ActivityPieCard(activity: activity);
+                      return _ActivityPieCard(activity: activitySnapshot.data!);
                     },
                   ),
                   const SizedBox(height: 20),

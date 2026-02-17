@@ -62,6 +62,59 @@ void main() {
     });
   });
 
+  group('shouldContinueActivityWindowPagination', () {
+    test('continues when page is full and oldest sample is still inside 24h window', () {
+      final now = DateTime.utc(2026, 2, 16, 23, 0);
+      final pageEntries = List.generate(500, (index) {
+        return {
+          'ts': now.subtract(Duration(minutes: index)).millisecondsSinceEpoch,
+        };
+      });
+
+      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+        pageEntries: pageEntries,
+        now: now,
+        pageSize: 500,
+      );
+
+      expect(shouldContinue, isTrue);
+    });
+
+    test('stops when page is full but already crosses 24h boundary', () {
+      final now = DateTime.utc(2026, 2, 16, 23, 0);
+      final pageEntries = List.generate(500, (index) {
+        return {
+          'ts': now.subtract(Duration(minutes: index * 3)).millisecondsSinceEpoch,
+        };
+      });
+
+      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+        pageEntries: pageEntries,
+        now: now,
+        pageSize: 500,
+      );
+
+      expect(shouldContinue, isFalse);
+    });
+
+    test('stops when page is not full', () {
+      final now = DateTime.utc(2026, 2, 16, 23, 0);
+      final pageEntries = List.generate(37, (index) {
+        return {
+          'ts': now.subtract(Duration(minutes: index)).millisecondsSinceEpoch,
+        };
+      });
+
+      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+        pageEntries: pageEntries,
+        now: now,
+        pageSize: 500,
+      );
+
+      expect(shouldContinue, isFalse);
+    });
+  });
+
   group('buildSeriesDataFromEntries', () {
     test('uses first valid timestamp baseline even when first doc ts is malformed', () {
       final series = DashboardPage.buildSeriesDataFromEntries([
