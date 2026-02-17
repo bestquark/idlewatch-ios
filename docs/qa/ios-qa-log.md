@@ -1,3 +1,57 @@
+## Cycle — 2026-02-17 08:51 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: QA cycle for `idlewatch-ios` Flutter app with focus on UX/Auth/Onboarding/Performance status updates.
+_Method_: Flutter static/static-like checks + test-run health probe.
+
+### Summary
+- ✅ `flutter analyze` passed cleanly (`No issues found`).
+- ⚠️ `flutter test` did not reach test execution and was terminated during `activity_normalization_test.dart` startup in both this and many prior cycles (environmental/test-runner stall pattern; no new regressions observed).
+- ✅ Docs-only cycle: no app behavior/code changes in this run.
+- ✅ Priorities P1–P3 remain closed; P4 remains partial pending lower-end iOS capture.
+
+### Prioritized Issues (UX/Auth/Onboarding/Performance)
+
+#### P1 — Keep remote iOS smoke closure evidence current
+- **Status**: ✅ Closed
+- **Current state**: Latest known green smoke artifact reference remains stable and logged in this QA history (`https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`).
+- **Acceptance criteria**:
+  - Keep the most recent green smoke run URL updated in this log on each meaningful flow or build change.
+  - If onboarding/auth behavior changes materially, capture and add a fresh iOS smoke artifact in the same cycle.
+
+#### P2 — Preserve onboarding/auth clarity and recovery UX
+- **Status**: ✅ Closed
+- **Current state**: Sign-in helper/retry semantics and loading-state language remain intact; behavior is still reflected by existing deterministic test hooks and runtime policy markers.
+- **Acceptance criteria**:
+  - Onboarding/auth sequences continue to expose clear states for helper visibility and retry behavior.
+  - Any UX-copy or auth-state transition change updates this log with evidence references (artifact or test proof).
+
+#### P3 — Maintain onboarding/performance guardrails and measurable thresholds
+- **Status**: ✅ Closed
+- **Current state**: Bootstrap/auth/dashboard timing instrumentation remains in policy/tests and no thresholds or signal definitions changed in this cycle.
+- **Acceptance criteria**:
+  - Keep telemetry labels (`idlewatch-perf`, bootstrap/auth timing, first-render, retry recovery) discoverable in artifacts/tests.
+  - If thresholds are adjusted, update expected bounds and evidence links in this cycle before merge.
+
+#### P4 — Expand older/low-end onboarding-perf confidence
+- **Status**: ⚠️ Partial
+- **Current state**: No new older/low-tier iOS run in this cycle; this remains the open risk item.
+- **Acceptance criteria**:
+  - Run at least one older/slower iOS profile capture.
+  - Record measured values for:
+    - `bootstrap_init_ms`
+    - `auth_sign_in_ms`
+    - `dashboard_first_render_ms`
+    - `loading_helper`
+    - `loading_retry`
+    - `dashboard_retry_recovery_ms`
+  - Mark this item ✅ Closed only when captured values meet guardrails or an explicit variance exception is approved and documented.
+
+### Validation Notes
+- `flutter analyze`: ✅
+- `flutter test`: ⚠️ stalled at startup of `activity_normalization_test.dart` after runner launch; command terminated manually to avoid lock/timeout.
+- Commit scope: docs-only (`docs/qa/ios-qa-log.md`).
+
+
 ## Cycle — 2026-02-17 08:40 America/Toronto
 _Auditor_: IdleWatch iOS QA Cron
 _Scope_: QA cycle for `idlewatch-ios` Flutter app docs/QA maintenance.
