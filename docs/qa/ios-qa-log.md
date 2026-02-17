@@ -1145,3 +1145,82 @@ Delivered the top feasible backlog items from the previous QA cycle:
 1. Add progressive loading timeout UX (10s helper, 30s retry/troubleshooting CTA).
 2. Persist selected host across app restarts (e.g., shared preferences).
 3. Add widget tests for host selector filtering + tooltip/time-axis rendering + invalid-point warnings.
+
+---
+
+## Cycle — 2026-02-16 21:21 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX, auth/onboarding continuity, performance/readability follow-up after host-filter + tooltip implementation
+_Method_: Static audit of `lib/main.dart` (no local Flutter runtime available in this environment)
+
+### Executive Summary
+The previous cycle’s top-priority work remains in place and looks structurally solid (host selection + tooltip/time axis + malformed-series handling).
+
+Current highest risks have shifted to **secondary loading UX** and **Firestore read cost/perf**:
+1. **P2** Activity pie stream still has no progressive timeout/retry UX.
+2. **P2** Activity query volume is high (`limit(2000)`), increasing mobile read/render overhead.
+3. **P3** Auth/error recovery is message-only in dashboard stream failures (no inline retry affordance).
+
+---
+
+## Prioritized Open Issues
+
+### P2 — Activity pie loader can spin indefinitely with no recovery path
+- **Area**: UX / resilience
+- **Impact**: Main dashboard now has timeout messaging, but activity card can still appear frozen during degraded connectivity.
+- **Evidence**: In activity `StreamBuilder`, `!activitySnapshot.hasData` returns bare `CircularProgressIndicator()` without elapsed-state escalation.
+- **Repro**:
+  1. Simulate slow/blocked Firestore response for host activity query.
+  2. Open dashboard and wait >30s.
+- **Current result**: Activity section shows perpetual spinner only.
+- **Expected result**: Same progressive recovery pattern used by primary metrics stream.
+- **Acceptance criteria**:
+  - After ~10s show “Still loading activity…” helper text.
+  - After ~30s show retry button and troubleshooting hint.
+  - Retry action re-subscribes activity query without requiring full app restart.
+
+### P2 — Activity query size (`limit(2000)`) risks unnecessary read/render cost on iOS
+- **Area**: Performance / battery / Firestore cost
+- **Impact**: Every stream refresh can process up to 2000 docs per active host just to compute a 24h pie summary.
+- **Evidence**: `hostActivityLimit = 2000`; query fetches full docs then filters to 24h in app code.
+- **Repro**:
+  1. Populate high-frequency metrics/events for an active host.
+  2. Observe repeated dashboard updates and profiling (read count/frame work).
+- **Current result**: Potentially over-fetches older/unneeded docs for the 24h window.
+- **Expected result**: Query/read volume bounded close to the 24h need.
+- **Acceptance criteria**:
+  - Reduce query volume via timestamp-bound query and/or lower adaptive limit.
+  - Keep pie card update latency <300ms at typical payload sizes.
+  - Verify no visible jank on small iPhones during stream updates.
+
+### P3 — Dashboard stream error state lacks direct retry CTA
+- **Area**: Auth / onboarding recovery
+- **Impact**: Permission/network errors are surfaced (good), but user path to recover is still manual.
+- **Evidence**: `_ErrorState` displays guidance text only; no retry button tied to `_retryNonce` refresh.
+- **Repro**:
+  1. Trigger transient read failure (network toggle / temporary rules mismatch).
+  2. Restore conditions.
+- **Current result**: User must leave/reopen view to force refresh.
+- **Expected result**: One-tap retry in-place.
+- **Acceptance criteria**:
+  - Add retry action in `_ErrorState` for both discovery and host series stream failures.
+  - On retry, clear stale error UI and reattempt stream subscription.
+  - Keep permission guidance text visible when retries continue to fail.
+
+---
+
+## Regression Check (Previously Addressed)
+- ✅ Host scoping and host persistence wiring still present (`SharedPreferences`, selected-host restore path).
+- ✅ Line-chart tooltips + bottom time labels remain implemented.
+- ✅ Malformed series points are still dropped with warning copy shown in dashboard.
+- ✅ Primary metrics loading now includes 10s helper + 30s retry flow.
+
+### Validation Notes
+- This cycle is static-analysis only (Flutter toolchain unavailable in this runner).
+- Runtime/UI device validation remains required before closing perf and recovery UX items.
+
+### Recommended Next QA Pass
+1. Implement activity-card timeout/retry UX parity with main loading state.
+2. Right-size activity query strategy for 24h pie computation.
+3. Add retry CTA to `_ErrorState` and verify transient failure recovery path on-device.
+4. Run smoke on iPhone SE + large-screen iPhone and document frame/read behavior.
