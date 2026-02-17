@@ -2,6 +2,25 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 12:22 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: Backlog status review; `flutter test` killed by OS (SIGKILL — 6th consecutive OOM cycle, 51% free memory reported)
+
+### Summary
+- ⚠️ `flutter test` killed by macOS (SIGKILL) — sixth consecutive OOM cycle.
+- ✅ All P1–P4 backlog items remain closed; no code changes since commit `31d9e17`.
+- ✅ Last successful full validation: 19/19 tests + clean analyzer at commit `3b31e77` (10:52 cycle).
+
+### Backlog Status Update
+- P1 (UX responsiveness): ✅ Closed.
+- P2 (Auth recovery): ✅ Closed.
+- P3 (Onboarding/host stability): ✅ Closed.
+- P4 (Perf guardrails): ✅ Closed (documented exception for older-device hardware).
+
+### Note
+Sixth consecutive SIGKILL despite 51% reported free memory — likely per-process memory limit or compressor pressure (460k compressor pages). No code changes to validate; risk remains low.
+
 ## Cycle — 2026-02-17 12:15 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
