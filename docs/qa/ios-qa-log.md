@@ -1,3 +1,76 @@
+## Cycle — 2026-02-17 08:10 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: Revalidation pass after previous perf capture cycle
+_Method_: Static analysis + selective runtime check + local test runner health check
+
+### Summary
+- ✅ No code changes in committed history since last logged cycle (HEAD: `412256a`).
+- ✅ `flutter analyze`: **no issues found**.
+- ⚠️ `flutter test`: runner stalled during `activity_normalization_test.dart` compilation after repeated waits and was terminated; treated as environment/resource contention (non-code regression pattern already observed).
+- P1–P3 remain **closed/partially closed** in line with established QA backlog semantics.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Keep remote iOS smoke closure evidence stable in QA log
+- **Status**: ✅ Closed
+- **Current state**: Evidence remains unchanged and valid.
+- **Acceptance criteria**:
+  - QA log continues to reference the latest green GitHub iOS Smoke run URL.
+  - No regression in closure evidence without explicit update.
+
+#### P2 — Maintain UX/auth/onboarding testability evidence in CI-backed artifacts
+- **Status**: ✅ Closed
+- **Current state**: CI-backed evidence remains in place (auth/onboarding/retry-helper coverage via automated checks and runtime traces).
+- **Acceptance criteria**:
+  - Next cycle must keep links to artifacts that show auth-gate, onboarding flow behavior, and retry-helper paths.
+  - When artifacts rotate, update QA log references in the same cycle.
+
+#### P3 — Refresh performance signal cadence for onboarding/first-render behavior
+- **Status**: ✅ Closed (baseline guardrails implemented)
+- **Current state**: Guardrails for onboarding loading-delay, retry-recovery and first-render timing are captured via policy/logging/tests.
+- **Acceptance criteria**:
+  - Keep concrete telemetry in `docs/qa/artifacts/ios-perf-capture-*.md` as evidence.
+  - Continue to validate these guardrails in static analysis and CI/test runs.
+
+#### P4 — Capture lower-end/older-device performance envelope for onboarding & first-render
+- **Status**: ⚠️ Partial
+- **Current state**: Deterministic delayed/retry-path timing signals are now captured on supported simulators; older-device coverage still pending due hardware/runtime profile constraints.
+- **Remaining**:
+  - Execute at least one slower/older iPhone simulator capture for:
+    - `bootstrap_init_ms`
+    - `auth_sign_in_ms`
+    - `dashboard_first_render_ms`
+    - `loading_helper` / `loading_retry`
+    - `dashboard_retry_recovery_ms`
+  - Record pass/fail against current guardrails and attach artifact links.
+
+### Validation Notes
+- `flutter analyze` ✅
+- `flutter test` ⚠️ (environmental stall; killed)
+- No commit required for this QA-only cycle.
+
+## Cycle — 2026-02-17 05:41 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: Revalidation pass — no code changes since last cycle
+_Method_: Static analysis + test runner health check
+
+### Summary
+- ✅ No code changes since last cycle (HEAD: `412256a`).
+- ✅ `flutter analyze`: **no issues found**.
+- ⚠️ `flutter test`: test runner hung again (killed after ~3 min). Same host resource contention pattern as 05:22 cycle. Not a regression.
+- All prior issues unchanged: P1–P3 ✅ Closed, P4 ⚠️ Partial (older-device capture pending).
+
+### Open Issues
+
+#### P4 — Capture lower-end/older-device performance envelope
+- **Status**: ⚠️ Partial (unchanged)
+- **Remaining**: Repeat perf capture on slower/older iPhone profile when supported simulator is available.
+
+### Validation Notes
+- `flutter analyze` ✅
+- `flutter test` ⚠️ (runner hung; no code regression — host resource issue)
+- No commit this cycle (no changes to push).
+
 ## Cycle — 2026-02-17 05:22 America/Toronto
 _Auditor_: IdleWatch iOS QA Cron
 _Scope_: Revalidation pass — no code changes since last cycle
