@@ -1,3 +1,80 @@
+## Cycle — 2026-02-16 22:33 America/Toronto
+_Auditor_: QA Lead (subagent)
+_Scope_: iOS UX/auth/onboarding/performance QA sweep + runtime-smoke gate check
+_Method_: Static review of `lib/main.dart` flows + attempted smoke workflow execution (`scripts/run_ios_smoke_workflow.sh`)
+
+### Executive Summary
+No new crash-level defects were identified in static review, but release confidence remains limited by missing runnable iOS smoke evidence in this environment. One **high-priority UX correctness risk** remains in host selection behavior for low-volume hosts, plus two medium-priority confidence/performance risks.
+
+### Prioritized Findings
+
+#### P1 — Persisted host can still be silently replaced when it is not present in host-discovery window
+- **Area**: UX / onboarding continuity for returning users
+- **Impact**: Users returning to a quieter host may get switched to a newer/busier host, and that fallback can overwrite the previously persisted host.
+- **Evidence**:
+  - Host discovery uses global latest window (`limit(240)`) and derives `hosts` from that subset.
+  - If persisted host is not in `hosts` and `_hostSelectionReady == true`, `decideHostSelection(...)` returns `fallbackHostToPersist`, which is then persisted.
+  - This can overwrite valid historical preference when host traffic is sparse.
+- **Acceptance criteria**:
+  - Do not persist fallback host solely because it is absent from a truncated discovery window.
+  - Add a non-destructive fallback mode (temporary active host only) until host is explicitly changed by user or verified absent via broader query.
+  - Add regression test: persisted host `A` missing from discovery-240, host `B` present → UI may temporarily show `B`, but persisted preference must remain `A`.
+
+#### P2 — Activity pie can still undercount in high-frequency hosts due to fixed `hostActivityLimit`
+- **Area**: Performance telemetry trust
+- **Impact**: “Activity (last 24h)” can be biased if >2000 activity documents exist in the 24h window.
+- **Evidence**:
+  - Activity query is host-scoped but capped at `.limit(2000)` before 24h filtering/normalization.
+- **Acceptance criteria**:
+  - Query activity by time window (`where ts >= now-24h`) rather than fixed doc cap, or paginate until window boundary is reached.
+  - Add deterministic test for >2000 docs in 24h ensuring stable normalized totals.
+
+#### P2 — iOS runtime smoke evidence remains blocked in current host
+- **Area**: Auth/onboarding/performance release confidence
+- **Impact**: Cannot validate startup latency, auth retries, and chart responsiveness on simulator/device.
+- **Evidence**:
+  - Smoke workflow run at 22:32 EST produced blocked preflight/runtime status.
+  - Artifacts:
+    - Smoke report: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260216-223206.md`
+    - Host preflight: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260216-223206.log`
+    - Runtime validation: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260216-223206.log`
+- **Acceptance criteria**:
+  - Install Flutter/FVM + CocoaPods on macOS host, then rerun `scripts/run_ios_smoke_workflow.sh`.
+  - Complete checklist outcomes for auth/onboarding retry UX and performance timings in the generated smoke report, then link results in this log.
+
+### Validation Notes
+- Runtime execution in this environment is still blocked (`flutter/fvm` unavailable; CocoaPods missing).
+- App code was not modified in this cycle; docs/artifacts only.
+
+## Cycle — 2026-02-16 22:32 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Runtime-smoke evidence refresh pass using existing automation workflow
+
+### Implementation Summary
+- ✅ Executed iOS smoke workflow/report automation for this cycle.
+- ✅ Linked current smoke artifacts and runtime-validation status into the QA log.
+- ✅ Kept prototype runtime/app logic unchanged (ops/docs evidence pass only).
+
+### Backlog Status Update
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
+- **Progress this cycle**:
+  - QA log linkage is now automated, reducing missed artifact references.
+  - Current iOS host preflight status: **blocked**.
+  - Current workflow attempt status: **blocked (flutter/fvm missing)**.
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260216-223206.md
+  - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260216-223206.log
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260216-223206.log
+
+### Validation Notes
+- Prototype runtime/app logic unchanged; updates are scripts/docs only.
+- If validation remains blocked/failing here, rerun on Flutter-enabled macOS host:
+  - scripts/run_ios_smoke_workflow.sh
+
 ## Cycle — 2026-02-16 22:29 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
