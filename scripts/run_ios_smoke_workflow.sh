@@ -6,6 +6,7 @@ ARTIFACT_DIR="${ROOT_DIR}/docs/qa/artifacts"
 PREP_SCRIPT="${ROOT_DIR}/scripts/prepare_ios_smoke_report.sh"
 VALIDATE_SCRIPT="${ROOT_DIR}/scripts/validate_runtime.sh"
 LINK_SCRIPT="${ROOT_DIR}/scripts/link_ios_smoke_artifacts.sh"
+RESOLVE_SCRIPT="${ROOT_DIR}/scripts/resolve_flutter_cmd.sh"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -23,11 +24,12 @@ timestamp="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 flutter_version="not available"
 validation_status="pass"
 validation_log=""
+flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 
-if command -v flutter >/dev/null 2>&1; then
-  flutter_version="$(flutter --version 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//')"
+if [[ -n "${flutter_cmd}" ]]; then
+  flutter_version="$(eval "${flutter_cmd} --version" 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//')"
 else
-  validation_status="blocked (flutter missing)"
+  validation_status="blocked (flutter/fvm missing)"
 fi
 
 echo "[idlewatch-ios] Running runtime validation..."
@@ -53,6 +55,7 @@ fi
   echo
   echo "## Auto-captured preflight"
   echo "- Generated: ${timestamp}"
+  echo "- Flutter command: ${flutter_cmd:-not available}"
   echo "- Flutter version: ${flutter_version}"
   echo "- Runtime validation status: ${validation_status}"
   if [[ -n "${validation_log}" ]]; then

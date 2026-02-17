@@ -74,7 +74,7 @@ scripts/run_ios_smoke_workflow.sh
 
 This helper will:
 - generate a timestamped smoke report template,
-- run `flutter --version`, `flutter pub get`, `flutter analyze`, and `flutter test`,
+- run validation via `flutter` (or `fvm flutter` when Flutter is managed through FVM),
 - auto-append preflight metadata + validation artifact path into the smoke report,
 - auto-link the latest smoke artifacts into `docs/qa/ios-qa-log.md`.
 

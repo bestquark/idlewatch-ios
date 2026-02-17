@@ -1,6 +1,6 @@
 # Runtime Smoke Checklist (iOS)
 
-Use this after runtime validation passes in a Flutter-enabled environment.
+Use this after runtime validation passes in a Flutter-enabled environment (supports both `flutter` and `fvm flutter`).
 
 Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs validation + appends preflight metadata + links artifacts into `docs/qa/ios-qa-log.md`).
 

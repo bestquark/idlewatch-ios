@@ -1,3 +1,28 @@
+## Cycle — 2026-02-16 21:34 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: QA-operability implementation pass focused on reducing Flutter toolchain false-blockers in smoke workflow
+
+### Implementation Summary
+- ✅ Added `scripts/resolve_flutter_cmd.sh` to standardize Flutter command discovery (`flutter` or `fvm flutter`).
+- ✅ Updated `scripts/validate_runtime.sh` to run analyze/test via discovered command and log which command is used.
+- ✅ Updated `scripts/run_ios_smoke_workflow.sh` to capture command source/version and classify missing tooling as `flutter/fvm missing`.
+- ✅ Updated QA docs (`README.md`, `docs/qa/runtime-smoke-checklist.md`) to reflect FVM-compatible runtime validation path.
+
+### Backlog Status Update
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (further mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires a Flutter-capable macOS host; this cycle reduced false negatives for environments using FVM-managed Flutter.
+- **Progress this cycle**:
+  - Smoke workflow now supports both direct Flutter SDK and FVM-managed Flutter setups.
+  - Validation artifacts now include resolved Flutter command context for clearer triage.
+
+### Validation Notes
+- Prototype runtime/app logic unchanged; updates are scripts/docs only.
+- Local runtime execution remains environment-dependent; run `scripts/run_ios_smoke_workflow.sh` on a Flutter-capable host to close this backlog item.
+
 ## Cycle — 2026-02-16 21:14 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
