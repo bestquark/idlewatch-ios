@@ -9,9 +9,11 @@ validation_status="${2:-unknown}"
 validation_log="${3:-}"
 preflight_status="${4:-unknown}"
 preflight_log="${5:-}"
+ci_trigger_status="${6:-not triggered}"
+ci_run_url="${7:-}"
 
 if [[ -z "${report_path}" ]]; then
-  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path] [preflight-status] [preflight-log-path]" >&2
+  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path] [preflight-status] [preflight-log-path] [ci-trigger-status] [ci-run-url]" >&2
   exit 1
 fi
 
@@ -30,6 +32,11 @@ fi
 preflight_log_line="- iOS host preflight log: (not found)"
 if [[ -n "${preflight_log}" ]]; then
   preflight_log_line="- iOS host preflight log: ${preflight_log}"
+fi
+
+ci_run_line="- GitHub iOS smoke CI run: (not triggered)"
+if [[ -n "${ci_run_url}" ]]; then
+  ci_run_line="- GitHub iOS smoke CI run: ${ci_run_url}"
 fi
 
 entry_file="$(mktemp)"
@@ -54,9 +61,11 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
   - QA log linkage is now automated, reducing missed artifact references.
   - Current iOS host preflight status: **${preflight_status}**.
   - Current workflow attempt status: **${validation_status}**.
+  - GitHub iOS smoke CI trigger status: **${ci_trigger_status}**.
   - Smoke report artifact: ${report_path}
   ${preflight_log_line}
   ${validation_log_line}
+  ${ci_run_line}
 
 ### Validation Notes
 - Prototype runtime/app logic unchanged; updates are scripts/docs only.

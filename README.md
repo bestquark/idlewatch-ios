@@ -78,6 +78,7 @@ This helper will:
 - print actionable install remediation when host prerequisites are missing,
 - run validation via `flutter` (or `fvm flutter` when Flutter is managed through FVM),
 - auto-append preflight metadata + validation artifact paths into the smoke report,
+- when local Flutter is unavailable, attempt to trigger GitHub iOS smoke workflow and capture run URL,
 - auto-link the latest smoke artifacts into `docs/qa/ios-qa-log.md`.
 
 Manual mode is still available:
@@ -93,6 +94,7 @@ in `docs/qa/ios-qa-log.md` (linking both the validation log and smoke report art
 
 When local macOS tooling is blocked, use GitHub-hosted iOS smoke evidence from:
 - `.github/workflows/ios-smoke.yml` (macOS runner: analyze + tests + simulator build)
+- or trigger directly: `scripts/trigger_ios_smoke_ci.sh`
 
 If automatic linkage fails, run:
 

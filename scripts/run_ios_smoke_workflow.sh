@@ -8,6 +8,7 @@ VALIDATE_SCRIPT="${ROOT_DIR}/scripts/validate_runtime.sh"
 LINK_SCRIPT="${ROOT_DIR}/scripts/link_ios_smoke_artifacts.sh"
 RESOLVE_SCRIPT="${ROOT_DIR}/scripts/resolve_flutter_cmd.sh"
 PREFLIGHT_SCRIPT="${ROOT_DIR}/scripts/preflight_ios_host.sh"
+CI_TRIGGER_SCRIPT="${ROOT_DIR}/scripts/trigger_ios_smoke_ci.sh"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -27,6 +28,8 @@ validation_status="pass"
 validation_log=""
 preflight_status="ready"
 preflight_log=""
+ci_run_url=""
+ci_run_status="not triggered"
 flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 
 if [[ -n "${flutter_cmd}" ]]; then
@@ -70,6 +73,27 @@ if [[ -z "${validation_log}" ]]; then
   validation_log="$(ls -t "${ARTIFACT_DIR}"/runtime-validation-*.log 2>/dev/null | head -n1 || true)"
 fi
 
+if [[ "${validation_status}" == "blocked (flutter/fvm missing)" ]]; then
+  echo "[idlewatch-ios] Local Flutter runtime unavailable; attempting GitHub iOS smoke CI trigger..."
+  set +e
+  ci_output="$(${CI_TRIGGER_SCRIPT} main 2>&1)"
+  ci_code=$?
+  set -e
+  printf '%s\n' "${ci_output}"
+
+  if [[ ${ci_code} -eq 0 ]]; then
+    ci_run_url="$(printf '%s' "${ci_output}" | sed -n 's/^Triggered iOS smoke CI run: //p' | tail -n1)"
+    ci_run_status="$(printf '%s' "${ci_output}" | sed -n 's/^CI run status: //p' | tail -n1)"
+    [[ -z "${ci_run_status}" ]] && ci_run_status="queued"
+  elif [[ ${ci_code} -eq 126 ]]; then
+    ci_run_status="not triggered (gh auth missing)"
+  elif [[ ${ci_code} -eq 127 ]]; then
+    ci_run_status="not triggered (gh CLI missing)"
+  else
+    ci_run_status="trigger failed"
+  fi
+fi
+
 {
   echo
   echo "## Auto-captured preflight"
@@ -88,6 +112,10 @@ fi
   else
     echo "- Runtime validation log: (not found)"
   fi
+  echo "- GitHub iOS smoke CI trigger status: ${ci_run_status}"
+  if [[ -n "${ci_run_url}" ]]; then
+    echo "- GitHub iOS smoke CI run: ${ci_run_url}"
+  fi
   echo "- Workflow helper: scripts/run_ios_smoke_workflow.sh"
   echo
   if [[ "${validation_status}" != "pass" ]]; then
@@ -97,13 +125,13 @@ fi
 
 echo "[idlewatch-ios] Linking artifacts into QA log..."
 set +e
-link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" "${preflight_status}" "${preflight_log}" 2>&1)"
+link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" "${preflight_status}" "${preflight_log}" "${ci_run_status}" "${ci_run_url}" 2>&1)"
 link_code=$?
 set -e
 printf '%s\n' "${link_output}"
 if [[ ${link_code} -ne 0 ]]; then
   echo "[idlewatch-ios] Warning: failed to auto-link artifacts into QA log." >&2
-  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\" \"${preflight_status}\" \"${preflight_log}\"" >&2
+  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\" \"${preflight_status}\" \"${preflight_log}\" \"${ci_run_status}\" \"${ci_run_url}\"" >&2
 fi
 
 echo "[idlewatch-ios] Smoke workflow complete."
