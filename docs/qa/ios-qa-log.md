@@ -18,7 +18,7 @@ _Method_: Prevent CI evidence churn from docs-only pushes by narrowing iOS Smoke
 - **Evidence this cycle**:
   - PR/commit includes: `.github/workflows/ios-smoke.yml` path-filter update.
   - Local validation: `flutter analyze` ✅, `flutter test` ✅.
-  - GitHub iOS Smoke run in progress at last check: https://github.com/bestquark/idlewatch-ios/actions/runs/22091856105 (will now cease being overwritten by docs-only updates).
+  - GitHub iOS Smoke run in progress at last check: https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460 (now triggered by CI-relevant change, not docs churn).
 - **Acceptance criteria**:
   - First green GitHub `iOS Smoke` run on `main` after this fix is recorded in QA log.
   - QA closure can proceed once analyzer/tests + simulator build pass in same run.
