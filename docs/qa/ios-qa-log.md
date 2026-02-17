@@ -19,6 +19,7 @@ _Method_: CI-failure triage + widget-test flake fix + local iOS smoke rerun
   - Failure source run: https://github.com/bestquark/idlewatch-ios/actions/runs/22087354915
   - Patched file: `test/activity_normalization_test.dart`
   - Local validation status: **pass**
+  - Post-push verification run (queued): https://github.com/bestquark/idlewatch-ios/actions/runs/22087541922
 
 #### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
 - **Previous**: ⏳ Open (further mitigated)
