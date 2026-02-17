@@ -30,12 +30,12 @@ cat >"${entry_file}" <<EOF
 ## Cycle — ${now_human}
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
-_Method_: QA-operability implementation pass focused on smoke-evidence linkage automation
+_Method_: Runtime-smoke evidence refresh pass using existing automation workflow
 
 ### Implementation Summary
-- ✅ Added scripts/link_ios_smoke_artifacts.sh to prepend a structured QA-cycle entry with smoke artifact links.
-- ✅ Updated smoke workflow to auto-call the linkage helper when report generation succeeds.
-- ✅ Updated README/checklist so operator handoff includes automatic QA-log linkage and fallback manual command.
+- ✅ Executed iOS smoke workflow/report automation for this cycle.
+- ✅ Linked current smoke artifacts and runtime-validation status into the QA log.
+- ✅ Kept prototype runtime/app logic unchanged (ops/docs evidence pass only).
 
 ### Backlog Status Update
 
