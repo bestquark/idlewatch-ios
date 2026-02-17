@@ -183,6 +183,67 @@ void main() {
     });
   });
 
+  group('auth gate signing-in hints', () {
+    testWidgets('sign-in helper appears around 10 seconds', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Column(
+                  children: AuthGatePage.buildSigningInHintsForTest(
+                    context: context,
+                    isSigningIn: true,
+                    authWaitSeconds: 10,
+                    onRetry: () {},
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Still signing in. This can take a moment if network or Firebase is slow.'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry sign-in'), findsNothing);
+    });
+
+    testWidgets('retry sign-in CTA appears around 30 seconds and fires callback', (
+      tester,
+    ) async {
+      var retryTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Column(
+                  children: AuthGatePage.buildSigningInHintsForTest(
+                    context: context,
+                    isSigningIn: true,
+                    authWaitSeconds: 30,
+                    onRetry: () {
+                      retryTapped = true;
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Retry sign-in'), findsOneWidget);
+      await tester.tap(find.text('Retry sign-in'));
+      await tester.pump();
+      expect(retryTapped, isTrue);
+    });
+  });
+
   group('loading and recovery widget states', () {
     testWidgets('loading helper appears around 10 seconds', (tester) async {
       await tester.pumpWidget(
