@@ -1,3 +1,55 @@
+## Cycle — 2026-02-17 09:18 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Implementation cycle for highest-priority feasible UX/Auth/Onboarding/Performance hardening.
+_Method_: Flutter analyze + Flutter test + backlog reconciliation and focused loading-state UX improvements.
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All tests passed** (all 18 tests).
+- ✅ Implemented feasible `P4`-adjacent hardening without changing production behavior:
+  - Added dedicated loading/retry UX for activity summary fetch path.
+  - Added retry action on activity summary error states for dashboard stream and host stream.
+  - Added Firestore activity-window query with fallback to avoid hard failures when range-index constraints prevent bounded queries.
+- ✅ Added deterministic widget coverage for activity-loading helper/retry behavior.
+- ⚠️ Explicit older/slower-device performance capture remains open (requires slower simulator/device profile).
+- Kept existing smoke evidence closure link untouched.
+
+### Prioritized Issues (UX/Auth/Onboarding/Performance)
+
+#### P1 — Maintain remote iOS smoke closure evidence
+- **Status**: ✅ Closed
+- **Current state**: Latest known green smoke URL remains current: `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`.
+- **Acceptance criteria**:
+  - Keep the latest green iOS Smoke run URL updated in this log on meaningful app or workflow changes.
+  - If onboarding/auth behavior changes, capture and add a fresh smoke artifact in the same cycle.
+
+#### P2 — Preserve onboarding/auth clarity and recovery UX
+- **Status**: ✅ Closed
+- **Current state**: Auth helper/retry timing and visibility behavior remains intact and validated in tests.
+- **Acceptance criteria**:
+  - Onboarding/auth sequences continue to expose clear states for helper visibility and retry behavior.
+  - Any changes to auth/onboarding copy/flow must update this log with evidence links.
+
+#### P3 — Maintain onboarding/performance guardrails and thresholds
+- **Status**: ✅ Closed
+- **Current state**: Timing policy, runtime signals, and deterministic tests for helper/retry guardrails remain in place.
+- **Acceptance criteria**:
+  - Keep guardrail signal names and expected thresholds discoverable in docs/artifacts/tests.
+  - Update this log whenever thresholds, signals, or evidence changes.
+
+#### P4 — Expand older/low-end onboarding/performance coverage
+- **Status**: ⚠️ Partial
+- **Current state**: Added activity-loading helper/retry test coverage and resilient activity-summary fetch behavior; still waiting on older/slower iOS profile capture.
+- **Acceptance criteria**:
+  - Run at least one older/slower iOS profile capture.
+  - Record and evaluate: `bootstrap_init_ms`, `auth_sign_in_ms`, `dashboard_first_render_ms`, `loading_helper`, `loading_retry`, `dashboard_retry_recovery_ms` against guardrails or documented exception.
+  - For remaining feasibility gaps due hardware profile access, document blocker and reopen capture action.
+
+### Validation Notes
+- `flutter analyze`: ✅
+- `flutter test`: ✅
+- Commit scope: code + docs (`lib/main.dart`, `test/activity_normalization_test.dart`, `docs/qa/ios-qa-log.md`).
+
 ## Cycle — 2026-02-17 09:01 America/Toronto
 _Auditor_: IdleWatch iOS QA Cron
 _Scope_: QA cycle for `idlewatch-ios` Flutter app focusing on UX/Auth/Onboarding/Performance.

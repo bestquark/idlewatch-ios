@@ -17,6 +17,7 @@ class IdleWatchPerformancePolicy {
   static const int authRetrySeconds = 30;
   static const int loadingHelperSeconds = 10;
   static const int loadingRetrySeconds = 30;
+  static const int activityWindowHours = 24;
   static const int firstRenderBudgetMs = 3500;
   static const int retryRecoveryBudgetMs = 30000;
 
@@ -804,6 +805,17 @@ class DashboardPage extends StatefulWidget {
   }
 
   @visibleForTesting
+  static Widget buildActivityLoadingStateForTest({
+    required int elapsedSeconds,
+    VoidCallback? onRetry,
+  }) {
+    return _ActivityLoadingState(
+      elapsedSeconds: elapsedSeconds,
+      onRetry: onRetry,
+    );
+  }
+
+  @visibleForTesting
   static Widget buildNoValidSeriesStateForTest({
     required String host,
     required List<String> availableHosts,
@@ -909,6 +921,8 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _hostSelectionReady = false;
   Timer? _loadingTicker;
   int _loadingSeconds = 0;
+  Timer? _activityLoadingTicker;
+  int _activityLoadingSeconds = 0;
   bool _loadingLoggedHelper = false;
   bool _loadingLoggedRetry = false;
   bool _firstRenderLogged = false;
@@ -986,6 +1000,37 @@ class _DashboardPageState extends State<DashboardPage> {
     if (_loadingSeconds != 0) {
       _loadingSeconds = 0;
     }
+  }
+
+  void _startActivityLoadingTicker() {
+    _activityLoadingTicker?.cancel();
+    _activityLoadingTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _activityLoadingSeconds += 1;
+      });
+    });
+  }
+
+  void _stopActivityLoadingTicker() {
+    _activityLoadingTicker?.cancel();
+    _activityLoadingTicker = null;
+    _activityLoadingSeconds = 0;
+  }
+
+  void _retryActivitySummary() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _activityBreakdownFuture = null;
+      _activityFutureHost = null;
+      _activityFutureRetryNonce = -1;
+      _activityLoadingSeconds = 0;
+    });
   }
 
   bool _shouldHoldLoadingForDelay() {
@@ -1066,21 +1111,48 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() {
       _retryNonce += 1;
       _loadingSeconds = 0;
+      _activityLoadingSeconds = 0;
       _activityBreakdownFuture = null;
       _activityFutureHost = null;
       _activityFutureRetryNonce = -1;
       _loadingLoggedHelper = false;
       _loadingLoggedRetry = false;
+      _didAutoRetryDashboardDelay = false;
     });
+    _stopActivityLoadingTicker();
   }
 
   Future<_ActivityBreakdown> _fetchActivityBreakdown(String activeHost) async {
     final now = DateTime.now();
-    final query = FirebaseFirestore.instance
+    final startWindowAt = now.subtract(
+      const Duration(hours: IdleWatchPerformancePolicy.activityWindowHours),
+    );
+    final baseQuery = FirebaseFirestore.instance
         .collection('metrics')
         .where('host', isEqualTo: activeHost)
         .orderBy('ts', descending: true);
 
+    try {
+      return await _fetchActivityBreakdownFromQuery(
+        query: baseQuery.where(
+          'ts',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startWindowAt),
+        ),
+      );
+    } on FirebaseException catch (error) {
+      // Older data types/indexes can cause strict range query failures.
+      // Keep prototype runnable by falling back to the unbounded host query.
+      debugPrint(
+        '[idlewatch-perf] dashboard_activity_window_filter_fallback=1 reason=${error.code}',
+      );
+      return _fetchActivityBreakdownFromQuery(query: baseQuery);
+    }
+  }
+
+  Future<_ActivityBreakdown> _fetchActivityBreakdownFromQuery({
+    required Query<Map<String, dynamic>> query,
+  }) async {
+    final now = DateTime.now();
     final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     QueryDocumentSnapshot<Map<String, dynamic>>? cursor;
 
@@ -1187,6 +1259,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void dispose() {
     _loadingTicker?.cancel();
+    _activityLoadingTicker?.cancel();
     super.dispose();
   }
 
@@ -1205,7 +1278,10 @@ class _DashboardPageState extends State<DashboardPage> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             _stopLoadingTicker();
-            return _ErrorState(message: snapshot.error.toString());
+            return _ErrorState(
+              message: snapshot.error.toString(),
+              onRetry: _retryStream,
+            );
           }
 
           if (_shouldHoldLoadingForDelay() || !snapshot.hasData) {
@@ -1264,7 +1340,11 @@ class _DashboardPageState extends State<DashboardPage> {
             stream: hostSeriesQuery.snapshots(),
             builder: (context, hostSnapshot) {
               if (hostSnapshot.hasError) {
-                return _ErrorState(message: hostSnapshot.error.toString());
+                _stopLoadingTicker();
+                return _ErrorState(
+                  message: hostSnapshot.error.toString(),
+                  onRetry: _retryStream,
+                );
               }
 
               if (_shouldHoldLoadingForDelay() || !hostSnapshot.hasData) {
@@ -1537,6 +1617,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     future: activityBreakdownFuture,
                     builder: (context, activitySnapshot) {
                       if (activitySnapshot.hasError) {
+                        _stopActivityLoadingTicker();
                         return _ActivityPieCard(
                           activity: _ActivityBreakdown(
                             cronjobSeconds: 0,
@@ -1549,14 +1630,20 @@ class _DashboardPageState extends State<DashboardPage> {
                       }
 
                       if (!activitySnapshot.hasData) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: CircularProgressIndicator(),
+                        _startActivityLoadingTicker();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: DashboardPage.buildActivityLoadingStateForTest(
+                            elapsedSeconds: _activityLoadingSeconds,
+                            onRetry: _activityLoadingSeconds >=
+                                    IdleWatchPerformancePolicy.loadingRetrySeconds
+                                ? _retryActivitySummary
+                                : null,
                           ),
                         );
                       }
 
+                      _stopActivityLoadingTicker();
                       return _ActivityPieCard(activity: activitySnapshot.data!);
                     },
                   ),
@@ -1943,6 +2030,60 @@ class _BootstrapLoadingState extends StatelessWidget {
   }
 }
 
+class _ActivityLoadingState extends StatelessWidget {
+  const _ActivityLoadingState({
+    required this.elapsedSeconds,
+    this.onRetry,
+  });
+
+  final int elapsedSeconds;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 14),
+            const Text('Loading activity summary…'),
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.loadingHelperSeconds) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Still loading activity summary on slow devices or networks.',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.loadingRetrySeconds) ...[
+              const SizedBox(height: 12),
+              Text(
+                'If this keeps loading, check Firestore connectivity and permissions.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.amberAccent),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry activity summary'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingState extends StatelessWidget {
   const _LoadingState({required this.elapsedSeconds, this.onRetry});
 
@@ -1995,9 +2136,13 @@ class _LoadingState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message});
+  const _ErrorState({
+    required this.message,
+    this.onRetry,
+  });
 
   final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -2015,6 +2160,14 @@ class _ErrorState extends StatelessWidget {
             'If this is a permission error, verify Firestore rules allow this '
             'authenticated user to read metrics.',
           ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
         ],
       ),
     );

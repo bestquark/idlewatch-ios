@@ -260,6 +260,50 @@ void main() {
   });
 
   group('loading and recovery widget states', () {
+    testWidgets('activity loading helper appears around 10 seconds', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardPage.buildActivityLoadingStateForTest(
+              elapsedSeconds: 10,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Loading activity summary…'), findsOneWidget);
+      expect(
+        find.text('Still loading activity summary on slow devices or networks.'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry activity summary'), findsNothing);
+    });
+
+    testWidgets('activity retry CTA appears around 30 seconds and fires callback', (
+      tester,
+    ) async {
+      var retryTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardPage.buildActivityLoadingStateForTest(
+              elapsedSeconds: 30,
+              onRetry: () {
+                retryTapped = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Retry activity summary'), findsOneWidget);
+      await tester.tap(find.text('Retry activity summary'));
+      await tester.pump();
+      expect(retryTapped, isTrue);
+    });
+
+
     testWidgets('loading helper appears around 10 seconds', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
