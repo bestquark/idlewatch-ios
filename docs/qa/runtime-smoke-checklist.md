@@ -17,6 +17,22 @@ Manual alternative: run `scripts/prepare_ios_smoke_report.sh`, `scripts/prefligh
 7. Loading helper appears around ~10s when stream is delayed.
 8. Retry CTA appears around ~30s when stream is delayed.
 
+### Lower-envelope perf capture (P4 support)
+
+When possible, use the lower-end iOS simulator candidate identified in preflight:
+
+1. Run preflight and note: `Lower-envelope candidate for perf capture`.
+2. Run the app on that simulator with debug defines to force helper/retry timing capture:
+   - `IDLEWATCH_DASHBOARD_DELAY_MS=10000`
+   - `IDLEWATCH_DASHBOARD_AUTO_RETRY=true`
+3. Capture and record:
+   - `loading_helper`
+   - `loading_retry`
+   - `dashboard_retry_recovery_ms`
+4. Add measured values to the cycle artifact + QA log.
+
+If no lower-end simulator is available, document blocker + current candidate inventory in the preflight/smoke artifacts.
+
 ## Record in QA log
 
 Include:

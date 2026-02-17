@@ -24,6 +24,90 @@ check_cmd() {
   fi
 }
 
+log_simulator_inventory() {
+  if ! command -v xcrun >/dev/null 2>&1; then
+    echo "[info] iOS simulator inventory: unavailable (xcrun not found)" | tee -a "${LOG_FILE}"
+    return
+  fi
+
+  local simulator_block
+  local line
+  local selected_candidate=""
+  local candidate_line=""
+  local selected_rank=999
+  local i=0
+
+  # Preference list from lower-to-higher expected load profile.
+  local -a preferred_models=(
+    "iPhone SE"
+    "iPhone 8"
+    "iPhone 8 Plus"
+    "iPhone X"
+    "iPhone XR"
+    "iPhone XS"
+    "iPhone 11"
+    "iPhone 12"
+    "iPhone 13"
+    "iPhone 14"
+    "iPhone 15"
+    "iPhone 16e"
+    "iPhone Air"
+    "iPhone 16"
+    "iPhone 17"
+  )
+
+  # shellcheck disable=SC2207
+  simulator_block="$(xcrun simctl list devices available | sed -n '/-- iOS /,/^-- watchOS /p')"
+
+  while IFS= read -r line; do
+    if [[ ! "$line" =~ ^[[:space:]]*iPhone ]]; then
+      continue
+    fi
+
+    if [[ "$line" =~ ^[[:space:]]*(iPhone[^\(]+)\ \(([0-9A-Fa-f-]+)\)\ \(([^\)]*)\)[[:space:]]*$ ]]; then
+      local name="${BASH_REMATCH[1]}"
+      local udid="${BASH_REMATCH[2]}"
+      local state="${BASH_REMATCH[3]}"
+      echo "[sim] ${name} | ${udid} | ${state}" | tee -a "${LOG_FILE}"
+
+      local rank=999
+      local idx
+      for idx in "${!preferred_models[@]}"; do
+        if [[ "$name" == *"${preferred_models[$idx]}"* ]]; then
+          rank=$((idx + 1))
+          break
+        fi
+      done
+
+      if [[ -z "$selected_candidate" && "$rank" -lt 999 ]]; then
+        selected_candidate="$name"
+        selected_rank=$rank
+        candidate_line="$name | ${udid} | ${state}"
+      elif [[ "$rank" -lt "$selected_rank" ]]; then
+        selected_candidate="$name"
+        selected_rank=$rank
+        candidate_line="$name | ${udid} | ${state}"
+      fi
+
+      i=$((i + 1))
+    fi
+  done <<< "${simulator_block}"
+
+  if [[ "$i" -gt 0 ]]; then
+    echo "[info] Total available iOS simulators listed: ${i}" | tee -a "${LOG_FILE}"
+  else
+    echo "[missing] No iPhone simulators found in simctl output" | tee -a "${LOG_FILE}"
+    status_ok=1
+    return
+  fi
+
+  if [[ -n "$selected_candidate" ]]; then
+    echo "[info] Lower-envelope candidate for perf capture: ${candidate_line}" | tee -a "${LOG_FILE}"
+  else
+    echo "[info] Lower-envelope candidate for perf capture: not detected from available models" | tee -a "${LOG_FILE}"
+  fi
+}
+
 {
   echo "[idlewatch-ios] iOS host preflight started: $(date)"
   echo "[idlewatch-ios] Repo: ${ROOT_DIR}"
@@ -45,6 +129,7 @@ check_cmd "iOS simulator control" xcrun
 if command -v xcrun >/dev/null 2>&1; then
   if xcrun simctl list devices available >/dev/null 2>&1; then
     echo "[ok] iOS simulator devices: available" | tee -a "${LOG_FILE}"
+    log_simulator_inventory
   else
     echo "[missing] iOS simulator devices: no available devices reported by simctl" | tee -a "${LOG_FILE}"
     status_ok=1
