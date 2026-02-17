@@ -1,3 +1,28 @@
+## Cycle — 2026-02-16 22:51 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: CI-based iOS smoke-path implementation to reduce local host-tooling dependency
+
+### Implementation Summary
+- ✅ Added GitHub Actions workflow `.github/workflows/ios-smoke.yml` on macOS runners.
+  - Runs `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build ios --simulator --debug`.
+  - Captures iOS toolchain visibility (`xcodebuild`, `xcrun simctl`, `pod`) in workflow logs.
+- ✅ Updated `README.md` runtime-validation guidance to point to CI smoke evidence when local Flutter/FVM/CocoaPods are unavailable.
+- ✅ Kept prototype runtime path unchanged; this cycle adds validation coverage/evidence plumbing only.
+
+### Backlog Status Update
+
+#### P2 — iOS runtime smoke evidence remains blocked in current host
+- **Previous**: ⏳ Open
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Local host remains blocked, but CI now provides a reproducible macOS simulator smoke lane independent of this machine.
+- **New evidence path**:
+  - GitHub Actions workflow: `.github/workflows/ios-smoke.yml`
+
+### Validation Notes
+- Could not execute local `flutter analyze` / `flutter test` / iOS simulator runtime in this environment (Flutter/FVM + CocoaPods unavailable).
+- Static change-only cycle; no app runtime logic modified.
+
 ## Cycle — 2026-02-16 22:47 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability

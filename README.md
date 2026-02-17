@@ -91,6 +91,9 @@ scripts/prepare_ios_smoke_report.sh
 After validation, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
 in `docs/qa/ios-qa-log.md` (linking both the validation log and smoke report artifact paths).
 
+When local macOS tooling is blocked, use GitHub-hosted iOS smoke evidence from:
+- `.github/workflows/ios-smoke.yml` (macOS runner: analyze + tests + simulator build)
+
 If automatic linkage fails, run:
 
 ```bash

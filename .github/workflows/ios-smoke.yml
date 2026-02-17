@@ -1,0 +1,38 @@
+name: iOS Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  ios-simulator-smoke:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Toolchain versions
+        run: |
+          flutter --version
+          xcodebuild -version
+          xcrun simctl list devices available
+          pod --version || true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static validation
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: iOS simulator build smoke
+        run: flutter build ios --simulator --debug
