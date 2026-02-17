@@ -9,6 +9,7 @@ LINK_SCRIPT="${ROOT_DIR}/scripts/link_ios_smoke_artifacts.sh"
 RESOLVE_SCRIPT="${ROOT_DIR}/scripts/resolve_flutter_cmd.sh"
 PREFLIGHT_SCRIPT="${ROOT_DIR}/scripts/preflight_ios_host.sh"
 CI_TRIGGER_SCRIPT="${ROOT_DIR}/scripts/trigger_ios_smoke_ci.sh"
+CI_STATUS_SCRIPT="${ROOT_DIR}/scripts/fetch_ios_smoke_ci_status.sh"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -72,6 +73,27 @@ fi
 validation_log="$(printf '%s' "${validation_output}" | sed -n 's/^Saved runtime validation log to: //p' | tail -n1)"
 if [[ -z "${validation_log}" ]]; then
   validation_log="$(ls -t "${ARTIFACT_DIR}"/runtime-validation-*.log 2>/dev/null | head -n1 || true)"
+fi
+
+echo "[idlewatch-ios] Fetching latest GitHub iOS smoke CI status..."
+set +e
+ci_status_output="$(${CI_STATUS_SCRIPT} main 2>&1)"
+ci_status_code=$?
+set -e
+printf '%s\n' "${ci_status_output}"
+
+if [[ ${ci_status_code} -eq 0 ]]; then
+  ci_run_url="$(printf '%s' "${ci_status_output}" | sed -n 's/^Latest iOS smoke CI run: //p' | tail -n1)"
+  ci_run_status="$(printf '%s' "${ci_status_output}" | sed -n 's/^CI run status: //p' | tail -n1)"
+  ci_run_conclusion="$(printf '%s' "${ci_status_output}" | sed -n 's/^CI run conclusion: //p' | tail -n1)"
+  [[ -z "${ci_run_status}" ]] && ci_run_status="unknown"
+  [[ -z "${ci_run_conclusion}" ]] && ci_run_conclusion="pending"
+elif [[ ${ci_status_code} -eq 126 ]]; then
+  ci_run_status="status unavailable (gh auth missing)"
+  ci_run_conclusion="unknown"
+elif [[ ${ci_status_code} -eq 127 ]]; then
+  ci_run_status="status unavailable (gh CLI missing)"
+  ci_run_conclusion="unknown"
 fi
 
 if [[ "${validation_status}" == "blocked (flutter/fvm missing)" ]]; then
