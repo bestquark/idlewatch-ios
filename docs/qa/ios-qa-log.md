@@ -1,3 +1,57 @@
+## Cycle — 2026-02-17 08:30 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: QA cycle check for prioritized UX/Auth/Onboarding/Performance issues.
+_Method_: Static analysis + test-run health + docs evidence review.
+
+### Summary
+- ✅ `flutter analyze` passed cleanly.
+- ⚠️ `flutter test` again stalled during `test/activity_normalization_test.dart` start and was terminated by harness timeout.
+- ✅ This cycle remains **docs-only**; no runtime or product behavior changes.
+- ✅ Existing smoke evidence links and performance guardrail evidence remain current in prior entries.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Preserve high-confidence onboarding/auth flow closure evidence
+- **Status**: ✅ Closed
+- **Current state**: No onboarding/auth behavior regressions observed in this cycle.
+- **Acceptance criteria**:
+  - Keep the latest passing smoke evidence/reference in `docs/qa/ios-qa-log.md`.
+  - Any onboarding/auth copy/flow code change must update this log with the next evidence artifact in the same cycle.
+
+#### P2 — Maintain UX clarity during delayed loading and retry states
+- **Status**: ✅ Closed
+- **Current state**: Helper/retry timing model remains unchanged and documented via prior captured evidence.
+- **Acceptance criteria**:
+  - Keep visibility of delayed-loading and retry states documented with reproducible evidence.
+  - If new UX labels/copy/timing logic is changed, add/update acceptance checks and evidence in this log.
+
+#### P3 — Keep onboarding/performance guardrails active and testable
+- **Status**: ✅ Closed
+- **Current state**: Guardrails for bootstrap/auth/dashboard timing remain in place; no config/code drift detected in docs snapshot.
+- **Acceptance criteria**:
+  - Continue logging guardrail-relevant timestamps (`bootstrap`, `auth_sign_in`, `dashboard_first_render`, retry-recovery).
+  - Keep deterministic timeout assertions up-to-date where thresholds or behavior change.
+
+#### P4 — Close older-device performance confidence gap
+- **Status**: ⚠️ Partial
+- **Current state**: Older/slower device capture still pending; this remains the active risk area.
+- **Acceptance criteria**:
+  - Capture at least one low-tier/older iOS simulator or device profile.
+  - Record measured values for:
+    - `bootstrap_init_ms`
+    - `auth_sign_in_ms`
+    - `dashboard_first_render_ms`
+    - `loading_helper`
+    - `loading_retry`
+    - `dashboard_retry_recovery_ms`
+  - Update this cycle entry to ✅ Closed when all values are in-budget or formally accepted via variance decision.
+
+### Validation Notes
+- `flutter analyze`: ✅
+- `flutter test`: ⚠️ (environmental stall at `activity_normalization_test.dart` start)
+- Commit scope: docs-only (`docs/qa/ios-qa-log.md`).
+
+
 ## Cycle — 2026-02-17 08:20 America/Toronto
 _Auditor_: IdleWatch iOS QA Cron
 _Scope_: iOS QA maintenance cycle (docs-first): validate and refresh UX/auth/onboarding/performance status for current release confidence.
