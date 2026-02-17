@@ -1,3 +1,45 @@
+## Cycle — 2026-02-16 19:41 America/Toronto
+_Auditor_: QA Lead (cron)
+_Scope_: UX/auth/onboarding/performance regression sweep + evidence continuity check
+_Method_: Static review of `lib/main.dart` + docs/tooling; runtime attempt in this environment (`flutter --version`) still blocked (`command not found`)
+
+### Executive Summary
+No new high-severity regressions were found in this pass. Recent host-scoped queries, 24h activity normalization, recovery-state UX, and smoke-artifact workflow hardening remain intact on static inspection.
+
+Top remaining release-confidence gap is unchanged: **fresh iOS runtime smoke evidence is still missing from a Flutter-enabled environment**.
+
+### Prioritized Open Issues
+
+### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Area**: Release confidence (UX/auth/onboarding/performance)
+- **Impact**: Static review + CI help, but interactive behavior/perf on iOS runtime remains unverified for latest changes.
+- **Evidence**:
+  - `flutter --version` in this runner returns `command not found`.
+  - `scripts/validate_runtime.sh` and `scripts/prepare_ios_smoke_report.sh` exist, but no new completed iOS smoke execution artifact is linked in this log.
+- **Acceptance criteria**:
+  - Run `scripts/validate_runtime.sh` on Flutter-enabled macOS and attach output artifact path(s).
+  - Generate a fresh smoke report via `scripts/prepare_ios_smoke_report.sh`, complete checklist outcomes from `docs/qa/runtime-smoke-checklist.md`, and link it here.
+  - Record startup latency + first-stream render timing and any flaky UX/auth paths.
+
+### P3 — App bootstrap/auth phases still have no explicit long-wait timeout guidance
+- **Area**: Onboarding resilience
+- **Impact**: If Firebase init or anonymous auth hangs without hard error, users can sit on spinner states with limited troubleshooting context.
+- **Evidence**:
+  - `AppBootstrapPage` loading path is an unconditional spinner until init completes/errors.
+  - `AuthGatePage` relies on sign-in state and button-driven retry, but lacks elapsed-time helper copy.
+- **Acceptance criteria**:
+  - Add ~10s helper text + ~30s troubleshooting/retry guidance for bootstrap/auth waits (mirroring dashboard loading UX pattern).
+  - Keep copy concise and prototype-safe; do not block successful fast paths.
+
+### Resolved / Verified This Cycle
+- ✅ Host-scoped dashboard/activity query strategy remains present.
+- ✅ 24h pie normalization invariants remain in place.
+- ✅ Structured smoke artifact workflow (`validate_runtime` + report template) is still documented and wired.
+
+### Validation Notes
+- No code changes this cycle; backlog refresh and prioritization only.
+- Next highest-leverage action remains capturing real iOS runtime smoke evidence on a Flutter-capable machine.
+
 ## Cycle — 2026-02-16 19:33 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
