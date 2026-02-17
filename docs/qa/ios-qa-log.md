@@ -18,6 +18,7 @@ _Method_: iOS scaffolding restoration + local smoke rerun + backlog reprioritiza
   - Added tracked iOS Flutter scaffolding (`ios/`), including Xcode project/workspace, Runner app sources, Podfile/lock, and Flutter iOS config.
   - Added root Flutter project metadata required for consistent tooling context (`.gitignore`, `.metadata`, `pubspec.lock`).
   - Local smoke/runtime validation remains passing after scaffolding restore.
+  - Post-push CI verification run queued: https://github.com/bestquark/idlewatch-ios/actions/runs/22087716875
 - **Closure condition (unchanged)**:
   - First green GitHub `iOS Smoke` run on `main` after this commit, with URL recorded as closure evidence.
 
@@ -29,6 +30,7 @@ _Method_: iOS scaffolding restoration + local smoke rerun + backlog reprioritiza
   - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-005846.md
   - iOS host preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260217-005846.log
   - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-005846.log
+  - GitHub iOS Smoke run (post-fix): https://github.com/bestquark/idlewatch-ios/actions/runs/22087716875 (queued)
 
 ### Validation Notes
 - Prototype remains runnable locally; analyzer + widget tests pass in current environment.
