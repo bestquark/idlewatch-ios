@@ -99,7 +99,7 @@ When local macOS tooling is blocked, use GitHub-hosted iOS smoke evidence from:
 If automatic linkage fails, run:
 
 ```bash
-scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path>
+scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path> [preflight-status] [preflight-log-path] [ci-trigger-status] [ci-run-url] [ci-run-conclusion]
 ```
 
 ## Firestore Schema

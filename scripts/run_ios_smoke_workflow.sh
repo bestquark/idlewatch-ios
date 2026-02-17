@@ -30,6 +30,7 @@ preflight_status="ready"
 preflight_log=""
 ci_run_url=""
 ci_run_status="not triggered"
+ci_run_conclusion="pending"
 flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 
 if [[ -n "${flutter_cmd}" ]]; then
@@ -84,13 +85,18 @@ if [[ "${validation_status}" == "blocked (flutter/fvm missing)" ]]; then
   if [[ ${ci_code} -eq 0 ]]; then
     ci_run_url="$(printf '%s' "${ci_output}" | sed -n 's/^Triggered iOS smoke CI run: //p' | tail -n1)"
     ci_run_status="$(printf '%s' "${ci_output}" | sed -n 's/^CI run status: //p' | tail -n1)"
+    ci_run_conclusion="$(printf '%s' "${ci_output}" | sed -n 's/^CI run conclusion: //p' | tail -n1)"
     [[ -z "${ci_run_status}" ]] && ci_run_status="queued"
+    [[ -z "${ci_run_conclusion}" ]] && ci_run_conclusion="pending"
   elif [[ ${ci_code} -eq 126 ]]; then
     ci_run_status="not triggered (gh auth missing)"
+    ci_run_conclusion="not triggered"
   elif [[ ${ci_code} -eq 127 ]]; then
     ci_run_status="not triggered (gh CLI missing)"
+    ci_run_conclusion="not triggered"
   else
     ci_run_status="trigger failed"
+    ci_run_conclusion="unknown"
   fi
 fi
 
@@ -113,6 +119,7 @@ fi
     echo "- Runtime validation log: (not found)"
   fi
   echo "- GitHub iOS smoke CI trigger status: ${ci_run_status}"
+  echo "- GitHub iOS smoke CI conclusion: ${ci_run_conclusion}"
   if [[ -n "${ci_run_url}" ]]; then
     echo "- GitHub iOS smoke CI run: ${ci_run_url}"
   fi
@@ -125,13 +132,13 @@ fi
 
 echo "[idlewatch-ios] Linking artifacts into QA log..."
 set +e
-link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" "${preflight_status}" "${preflight_log}" "${ci_run_status}" "${ci_run_url}" 2>&1)"
+link_output="$(${LINK_SCRIPT} "${report_path}" "${validation_status}" "${validation_log}" "${preflight_status}" "${preflight_log}" "${ci_run_status}" "${ci_run_url}" "${ci_run_conclusion}" 2>&1)"
 link_code=$?
 set -e
 printf '%s\n' "${link_output}"
 if [[ ${link_code} -ne 0 ]]; then
   echo "[idlewatch-ios] Warning: failed to auto-link artifacts into QA log." >&2
-  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\" \"${preflight_status}\" \"${preflight_log}\" \"${ci_run_status}\" \"${ci_run_url}\"" >&2
+  echo "[idlewatch-ios] Manual fallback: ${LINK_SCRIPT} \"${report_path}\" \"${validation_status}\" \"${validation_log}\" \"${preflight_status}\" \"${preflight_log}\" \"${ci_run_status}\" \"${ci_run_url}\" \"${ci_run_conclusion}\"" >&2
 fi
 
 echo "[idlewatch-ios] Smoke workflow complete."

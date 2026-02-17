@@ -11,9 +11,10 @@ preflight_status="${4:-unknown}"
 preflight_log="${5:-}"
 ci_trigger_status="${6:-not triggered}"
 ci_run_url="${7:-}"
+ci_run_conclusion="${8:-pending}"
 
 if [[ -z "${report_path}" ]]; then
-  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path] [preflight-status] [preflight-log-path] [ci-trigger-status] [ci-run-url]" >&2
+  echo "Usage: scripts/link_ios_smoke_artifacts.sh <smoke-report-path> [validation-status] [validation-log-path] [preflight-status] [preflight-log-path] [ci-trigger-status] [ci-run-url] [ci-run-conclusion]" >&2
   exit 1
 fi
 
@@ -62,6 +63,7 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
   - Current iOS host preflight status: **${preflight_status}**.
   - Current workflow attempt status: **${validation_status}**.
   - GitHub iOS smoke CI trigger status: **${ci_trigger_status}**.
+  - GitHub iOS smoke CI conclusion: **${ci_run_conclusion}**.
   - Smoke report artifact: ${report_path}
   ${preflight_log_line}
   ${validation_log_line}

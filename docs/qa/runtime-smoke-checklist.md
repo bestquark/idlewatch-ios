@@ -29,5 +29,5 @@ Include:
 If needed, you can manually link artifacts into the QA log:
 
 ```bash
-scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path>
+scripts/link_ios_smoke_artifacts.sh <smoke-report-path> <validation-status> <validation-log-path> [preflight-status] [preflight-log-path] [ci-trigger-status] [ci-run-url] [ci-run-conclusion]
 ```
