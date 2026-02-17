@@ -43,6 +43,8 @@ class AppBootstrapPage extends StatefulWidget {
 class _AppBootstrapPageState extends State<AppBootstrapPage> {
   bool _isInitializing = true;
   String? _startupError;
+  Timer? _waitTicker;
+  int _waitSeconds = 0;
 
   @override
   void initState() {
@@ -50,11 +52,28 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
     _initialize();
   }
 
+  void _startWaitTicker() {
+    _waitTicker?.cancel();
+    _waitTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_isInitializing) return;
+      setState(() {
+        _waitSeconds += 1;
+      });
+    });
+  }
+
+  void _stopWaitTicker() {
+    _waitTicker?.cancel();
+    _waitTicker = null;
+  }
+
   Future<void> _initialize() async {
     setState(() {
       _isInitializing = true;
       _startupError = null;
+      _waitSeconds = 0;
     });
+    _startWaitTicker();
 
     try {
       await Firebase.initializeApp();
@@ -67,12 +86,25 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
         _isInitializing = false;
       });
     }
+    _stopWaitTicker();
+  }
+
+  @override
+  void dispose() {
+    _stopWaitTicker();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Starting IdleWatch')),
+        body: _BootstrapLoadingState(
+          elapsedSeconds: _waitSeconds,
+          onRetry: _waitSeconds >= 30 ? _initialize : null,
+        ),
+      );
     }
 
     if (_startupError != null) {
@@ -131,6 +163,8 @@ class AuthGatePage extends StatefulWidget {
 class _AuthGatePageState extends State<AuthGatePage> {
   bool _isSigningIn = false;
   String? _authError;
+  Timer? _authWaitTicker;
+  int _authWaitSeconds = 0;
 
   @override
   void initState() {
@@ -138,11 +172,28 @@ class _AuthGatePageState extends State<AuthGatePage> {
     _signInAnonymously();
   }
 
+  void _startAuthWaitTicker() {
+    _authWaitTicker?.cancel();
+    _authWaitTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_isSigningIn) return;
+      setState(() {
+        _authWaitSeconds += 1;
+      });
+    });
+  }
+
+  void _stopAuthWaitTicker() {
+    _authWaitTicker?.cancel();
+    _authWaitTicker = null;
+  }
+
   Future<void> _signInAnonymously() async {
     setState(() {
       _isSigningIn = true;
       _authError = null;
+      _authWaitSeconds = 0;
     });
+    _startAuthWaitTicker();
 
     try {
       await FirebaseAuth.instance.signInAnonymously();
@@ -157,6 +208,13 @@ class _AuthGatePageState extends State<AuthGatePage> {
         _isSigningIn = false;
       });
     }
+    _stopAuthWaitTicker();
+  }
+
+  @override
+  void dispose() {
+    _stopAuthWaitTicker();
+    super.dispose();
   }
 
   @override
@@ -198,6 +256,29 @@ class _AuthGatePageState extends State<AuthGatePage> {
                       : const Icon(Icons.login),
                   label: Text(_isSigningIn ? 'Signing in…' : 'Continue as guest'),
                 ),
+                if (_isSigningIn && _authWaitSeconds >= 10) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Still signing in. This can take a moment if network or Firebase is slow.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+                if (_isSigningIn && _authWaitSeconds >= 30) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'If this keeps spinning, verify Anonymous auth is enabled in Firebase and try again.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.amberAccent),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _signInAnonymously,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry sign-in'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1227,6 +1308,55 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Flexible(child: Text(label)),
       ],
+    );
+  }
+}
+
+class _BootstrapLoadingState extends StatelessWidget {
+  const _BootstrapLoadingState({required this.elapsedSeconds, this.onRetry});
+
+  final int elapsedSeconds;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 14),
+            const Text('Initializing Firebase…'),
+            if (elapsedSeconds >= 10) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Still initializing. This can happen on first launch or slower networks.',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (elapsedSeconds >= 30) ...[
+              const SizedBox(height: 12),
+              Text(
+                'If this keeps spinning, check Firebase config/plist setup, then retry.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.amberAccent),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry setup'),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

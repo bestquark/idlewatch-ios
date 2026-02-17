@@ -1,3 +1,31 @@
+## Cycle — 2026-02-16 19:54 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Targeted onboarding resilience implementation in `lib/main.dart`; runtime execution still blocked in this environment (`flutter` CLI unavailable)
+
+### Implementation Summary
+Addressed the highest-priority feasible product-code item from the latest QA backlog:
+
+- ✅ **P3 resolved** — Added long-wait helper + troubleshooting/retry guidance for bootstrap/auth phases.
+  - `AppBootstrapPage` now tracks initialization wait time and shows progressive helper copy (~10s) + troubleshooting and retry CTA (~30s).
+  - `AuthGatePage` now tracks sign-in wait time and shows progressive helper copy (~10s) + troubleshooting and retry CTA (~30s).
+  - Changes are prototype-safe and do not alter successful fast-path behavior.
+
+### Backlog Status Update
+
+#### P3 — App bootstrap/auth phases still have no explicit long-wait timeout guidance
+- **Previous**: Open
+- **Now**: ✅ Resolved
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: Open
+- **Now**: ⏳ Open
+- **Reason**: This environment still lacks Flutter/iOS runtime tooling; smoke evidence must be captured on a Flutter-enabled macOS host.
+
+### Validation Notes
+- Could not run `flutter analyze` / `flutter test` / iOS smoke in this environment (`flutter` unavailable).
+- Dashboard/loading/auth fast paths remain intact in static review.
+
 ## Cycle — 2026-02-16 19:41 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX/auth/onboarding/performance regression sweep + evidence continuity check
