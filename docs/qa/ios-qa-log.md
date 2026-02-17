@@ -1,3 +1,35 @@
+## Cycle — 2026-02-17 01:58 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Status check — no code changes needed
+
+### Summary
+- No code changes this cycle. CI run `22088803692` is **in progress** — static validation ✅, iOS simulator build step actively running.
+- Previous runs (`22088566940`, `22088392596`) were **cancelled** by concurrency control as expected.
+- Waiting for build step completion to close P1.
+
+### P1 — Remote iOS smoke CI closure
+- **Status**: ⏳ Open — build in progress
+- **Run**: https://github.com/bestquark/idlewatch-ios/actions/runs/22088803692
+- **Steps passed**: checkout ✅, Flutter setup ✅, toolchain ✅, deps ✅, static validation ✅
+- **Current step**: iOS simulator build smoke (in progress since ~06:54 UTC)
+
+---
+
+## Cycle — 2026-02-17 01:59 America/Toronto
+_Auditor_: IdleWatch iOS Implementer
+_Scope_: Enrollment UX + Fleet prototype validation in simulator
+
+### Validation Evidence
+- ✅ `flutter analyze` passes.
+- ✅ iOS simulator screenshot captured:
+  - `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/enrollment-fleet-ios.png`
+
+### Notes
+- Enrollment token generation writes `enrollment_tokens` documents.
+- Fleet list reads from `devices` collection and computes online if `lastSeenTs` within 2 minutes.
+
+---
+
 ## Cycle — 2026-02-17 01:50 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
