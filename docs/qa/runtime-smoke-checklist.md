@@ -1,8 +1,10 @@
 # Runtime Smoke Checklist (iOS)
 
-Use this after `scripts/validate_runtime.sh` passes in a Flutter-enabled environment.
+Use this after runtime validation passes in a Flutter-enabled environment.
 
-Tip: run `scripts/prepare_ios_smoke_report.sh` first to generate a timestamped report template under `docs/qa/artifacts/`.
+Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs validation + appends preflight metadata).
+
+Manual alternative: run `scripts/prepare_ios_smoke_report.sh` and `scripts/validate_runtime.sh` separately.
 
 ## Simulator/device smoke pass
 

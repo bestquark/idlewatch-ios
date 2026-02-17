@@ -1,3 +1,31 @@
+## Cycle — 2026-02-16 20:40 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: QA-operability implementation pass focused on runtime-smoke evidence handoff automation (Flutter runtime still unavailable in this environment)
+
+### Implementation Summary
+Addressed the highest-priority feasible portion of the remaining open backlog item (**fresh iOS runtime smoke evidence not yet captured**) by reducing operator friction and ensuring artifact continuity:
+
+- ✅ Added `scripts/run_ios_smoke_workflow.sh`.
+  - One-command workflow that creates a timestamped smoke report template, runs runtime validation, and appends preflight metadata (timestamp, Flutter version, validation status, validation log path) into the report.
+  - Handles non-Flutter environments gracefully by marking validation as blocked while still producing a structured report artifact for handoff.
+
+- ✅ Updated `README.md` runtime-validation section to recommend the new one-command workflow and keep manual fallback paths documented.
+
+- ✅ Updated `docs/qa/runtime-smoke-checklist.md` to align with the new workflow.
+
+### Backlog Status Update
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: Open
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Real simulator/device smoke execution still requires a Flutter-enabled macOS host.
+- **Progress this cycle**: Evidence capture + linkage process is now more deterministic and lower-friction, improving handoff reliability.
+
+### Validation Notes
+- `command -v flutter` still returns no path in this environment.
+- Prototype runtime logic unchanged; updates are scripts/docs only.
+
 ## Cycle — 2026-02-16 20:39 America/Toronto
 _Auditor_: QA Lead (cron)
 _Scope_: UX/auth/onboarding/performance regression sweep + release-confidence gate check

@@ -66,20 +66,25 @@ of crashing.
 
 ### 5) Runtime validation (recommended before merge/release)
 
+Preferred one-command workflow:
+
 ```bash
-scripts/validate_runtime.sh
+scripts/run_ios_smoke_workflow.sh
 ```
 
-This script runs `flutter --version`, `flutter pub get`, `flutter analyze`, and
-`flutter test`, and writes an artifact log under `docs/qa/artifacts/`.
+This helper will:
+- generate a timestamped smoke report template,
+- run `flutter --version`, `flutter pub get`, `flutter analyze`, and `flutter test`,
+- auto-append preflight metadata + validation artifact path into the smoke report.
 
-Then create a timestamped smoke report template:
+Manual mode is still available:
 
 ```bash
+scripts/validate_runtime.sh
 scripts/prepare_ios_smoke_report.sh
 ```
 
-After that, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
+After validation, complete `docs/qa/runtime-smoke-checklist.md` and summarize results
 in `docs/qa/ios-qa-log.md` (linking both the validation log and smoke report artifact paths).
 
 ## Firestore Schema
