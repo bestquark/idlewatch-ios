@@ -588,9 +588,12 @@ class DashboardPage extends StatefulWidget {
       );
     }
 
+    // Non-destructive fallback mode:
+    // if a persisted host is missing from this discovery window, temporarily
+    // render a fallback host but do not overwrite persisted preference.
     return DashboardHostSelectionDecision(
       activeHost: fallbackHost,
-      fallbackHostToPersist: fallbackHost,
+      fallbackHostToPersist: null,
     );
   }
 

@@ -117,7 +117,7 @@ void main() {
       expect(decision.fallbackHostToPersist, isNull);
     });
 
-    test('persists fallback once ready when persisted host is missing', () {
+    test('uses temporary fallback without overwriting persisted host when missing from window', () {
       final decision = DashboardPage.decideHostSelection(
         hosts: const ['host-a', 'host-b'],
         latestHost: 'host-b',
@@ -126,7 +126,7 @@ void main() {
       );
 
       expect(decision.activeHost, 'host-b');
-      expect(decision.fallbackHostToPersist, 'host-b');
+      expect(decision.fallbackHostToPersist, isNull);
     });
   });
 

@@ -1,3 +1,34 @@
+## Cycle — 2026-02-16 22:38 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: Targeted host-selection persistence correctness fix in `lib/main.dart` + regression test update
+
+### Implementation Summary
+- ✅ Implemented non-destructive host fallback behavior when persisted host is absent from the discovery-240 window.
+  - `DashboardPage.decideHostSelection(...)` now returns a temporary active fallback host **without persisting** it.
+  - This prevents silent overwrite of valid persisted host preferences during sparse-host windows.
+- ✅ Updated regression coverage in `test/activity_normalization_test.dart` to assert `fallbackHostToPersist == null` when persisted host is missing but host selection is ready.
+- ✅ Prototype architecture/run path remains unchanged outside host-selection persistence behavior.
+
+### Backlog Status Update
+
+#### P1 — Persisted host can still be silently replaced when it is not present in host-discovery window
+- **Previous**: Open
+- **Now**: ✅ Resolved
+- **Reason**: Fallback host is now temporary-only in this case; persisted preference is not overwritten by truncated discovery windows.
+
+#### P2 — Activity pie can still undercount in high-frequency hosts due to fixed `hostActivityLimit`
+- **Status**: ⏳ Open
+- **Reason**: Requires window-bounded query/pagination strategy change (not completed this cycle).
+
+#### P2 — iOS runtime smoke evidence remains blocked in current host
+- **Status**: ⏳ Open
+- **Reason**: Flutter/FVM + CocoaPods unavailable in current environment.
+
+### Validation Notes
+- Could not execute `flutter analyze` / `flutter test` in this environment (toolchain unavailable).
+- Change is isolated to host-selection persistence decision and unit-test expectations.
+
 ## Cycle — 2026-02-16 22:33 America/Toronto
 _Auditor_: QA Lead (subagent)
 _Scope_: iOS UX/auth/onboarding/performance QA sweep + runtime-smoke gate check
