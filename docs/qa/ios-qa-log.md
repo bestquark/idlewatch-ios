@@ -21,6 +21,7 @@ _Method_: CI-failure triage + compile-fix implementation + runtime-smoke evidenc
   - Addressed `map_value_type_not_assignable` errors around activity normalization map typing.
   - Addressed `SideTitleWidget` signature mismatch (`axisSide` required, `meta` parameter removed).
   - Removed one analyzer noise issue (unused import) to keep CI signal cleaner.
+  - Post-push verification run queued: https://github.com/bestquark/idlewatch-ios/actions/runs/22087124707
 
 #### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
 - **Previous**: ⏳ Open (mitigated)
