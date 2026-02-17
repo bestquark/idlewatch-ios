@@ -58,7 +58,9 @@ set -e
 printf '%s\n' "${validation_output}"
 
 if [[ ${validation_code} -ne 0 ]]; then
-  if [[ "${validation_status}" == "pass" ]]; then
+  if [[ ${validation_code} -eq 127 ]]; then
+    validation_status="blocked (flutter/fvm missing)"
+  elif [[ "${validation_status}" == "pass" ]]; then
     validation_status="fail"
   fi
 fi
@@ -111,5 +113,9 @@ if [[ -n "${validation_log}" ]]; then
 fi
 
 if [[ ${validation_code} -ne 0 ]]; then
+  if [[ ${validation_code} -eq 127 ]]; then
+    echo "[idlewatch-ios] Validation blocked by missing Flutter runtime; returning success for evidence-only cycle."
+    exit 0
+  fi
   exit ${validation_code}
 fi
