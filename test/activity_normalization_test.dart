@@ -221,7 +221,7 @@ void main() {
 
       expect(find.text('Retry connection'), findsOneWidget);
       await tester.tap(find.text('Retry connection'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(retryTapped, isTrue);
     });
 
