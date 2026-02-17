@@ -21,7 +21,11 @@ fi
   echo "[idlewatch-ios] Repo: ${ROOT_DIR}"
   echo "[idlewatch-ios] Flutter command: ${FLUTTER_CMD}"
   echo
-  eval "${FLUTTER_CMD} --version"
+  if [[ "${IDLEWATCH_VALIDATE_REPORT_VERSION:-0}" == "1" ]]; then
+    eval "${FLUTTER_CMD} --version"
+    echo
+  fi
+
   echo
   echo "[step] ${FLUTTER_CMD} pub get"
   eval "${FLUTTER_CMD} pub get"

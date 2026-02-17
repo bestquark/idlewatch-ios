@@ -35,7 +35,11 @@ ci_run_conclusion="pending"
 flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 
 if [[ -n "${flutter_cmd}" ]]; then
-  flutter_version="$(eval "${flutter_cmd} --version" 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//')"
+  if [[ "${IDLEWATCH_WORKFLOW_CAPTURE_FLUTTER_VERSION:-0}" == "1" ]]; then
+    flutter_version="$(eval "${flutter_cmd} --version" 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//')"
+  else
+    flutter_version="not captured (skipped to reduce memory footprint)"
+  fi
 else
   validation_status="blocked (flutter/fvm missing)"
 fi

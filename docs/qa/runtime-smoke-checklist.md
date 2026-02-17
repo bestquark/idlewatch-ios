@@ -6,6 +6,14 @@ Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report 
 
 Manual alternative: run `scripts/prepare_ios_smoke_report.sh`, `scripts/preflight_ios_host.sh`, and `scripts/validate_runtime.sh` separately.
 
+## Memory-constrained hosts (optional)
+
+Some macOS hosts are OOM-sensitive while running Flutter tooling. To reduce memory pressure, version checks are now opt-in (off by default):
+- `IDLEWATCH_PRECHECK_FLUTTER_VERSION=1` enables Flutter version capture in `preflight_ios_host.sh`.
+- `IDLEWATCH_WORKFLOW_CAPTURE_FLUTTER_VERSION=1` enables Flutter version capture in `run_ios_smoke_workflow.sh`.
+- `IDLEWATCH_VALIDATE_REPORT_VERSION=1` enables Flutter version capture in `validate_runtime.sh`.
+
+When unset or set to `0`, those scripts skip `flutter --version` calls and continue to capture all required artifact and validation paths.
 ## Simulator/device smoke pass
 
 1. App launches to dashboard without crash.

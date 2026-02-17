@@ -117,7 +117,11 @@ log_simulator_inventory() {
 flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 if [[ -n "${flutter_cmd}" ]]; then
   echo "[ok] Flutter command: ${flutter_cmd}" | tee -a "${LOG_FILE}"
-  (eval "${flutter_cmd} --version" | head -n1) 2>/dev/null | sed 's/^/[info] /' | tee -a "${LOG_FILE}" || true
+  if [[ "${IDLEWATCH_PRECHECK_FLUTTER_VERSION:-0}" == "1" ]]; then
+    (eval "${flutter_cmd} --version" | head -n1) 2>/dev/null | sed 's/^/[info] /' | tee -a "${LOG_FILE}" || true
+  else
+    echo "[info] Flutter version capture skipped to reduce CLI memory footprint." | tee -a "${LOG_FILE}"
+  fi
 else
   echo "[missing] Flutter command: neither 'flutter' nor 'fvm flutter' is available" | tee -a "${LOG_FILE}"
   status_ok=1

@@ -2,6 +2,30 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 17:05 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Implementation cycle (prototype-safe hardening under host resource constraints)
+_Method_: `docs/qa/ios-qa-log.md` review + smoke/validation script hardening for OOM-prone hosts
+
+### Summary
+- ✅ Implemented memory-aware smoke-path defaults for iOS validation helpers:
+  - `scripts/preflight_ios_host.sh` no longer captures Flutter version unless explicitly enabled.
+  - `scripts/run_ios_smoke_workflow.sh` skips Flutter version capture by default.
+  - `scripts/validate_runtime.sh` skips Flutter version logging by default.
+- ⚠️ Validation still constrained on this host by Flutter toolchain memory pressure; no new app/runtime regressions to validate.
+- ✅ Added a memory-first checklist note for future operators.
+- ✅ Backlog statuses reviewed and updated.
+
+### Backlog Status Update
+- P1 (UX responsiveness): ✅ Closed.
+- P2 (Auth recovery): ✅ Closed.
+- P3 (Onboarding/host stability): ✅ Closed.
+- P4 (Perf guardrails): ✅ Closed (documented exception for older-device hardware).
+- P5 (Validation workflow resiliency): ✅ Closed (opt-in memory mode implemented to avoid unnecessary Flutter CLI overhead).
+
+### Note
+Prioritized this cycle for prototype maintainability under constrained hosts so QA evidence capture remains possible without wasting memory on nonessential `flutter --version` calls.
+
 ## Cycle — 2026-02-17 16:30 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
