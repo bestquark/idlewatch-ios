@@ -1,3 +1,33 @@
+## Cycle — 2026-02-16 21:55 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
+_Method_: QA-operability implementation pass focused on iOS host readiness preflight + smoke evidence continuity
+
+### Implementation Summary
+- ✅ Added `scripts/preflight_ios_host.sh` to verify iOS smoke prerequisites (`flutter`/`fvm`, `xcodebuild`, `xcrun simctl`, `pod`) and emit a timestamped artifact log.
+- ✅ Updated `scripts/run_ios_smoke_workflow.sh` to run preflight first and append preflight status/log path into smoke report metadata.
+- ✅ Updated QA docs (`README.md`, `docs/qa/runtime-smoke-checklist.md`) to include the new preflight step.
+- ✅ Executed smoke workflow for this cycle and linked generated artifacts into this QA log.
+
+### Backlog Status Update
+
+#### P2 — Missing fresh iOS simulator/device smoke evidence for latest UX/auth flows
+- **Previous**: ⏳ Open (further mitigated)
+- **Now**: ⏳ Open (further mitigated)
+- **Reason**: Fresh simulator/device execution still requires Flutter-enabled macOS host.
+- **Progress this cycle**:
+  - New preflight artifact now distinguishes host-readiness blockers before runtime validation.
+  - Current preflight status: **blocked** (flutter/fvm missing, CocoaPods missing).
+  - Current workflow attempt status: **blocked (flutter/fvm missing)**.
+  - Preflight log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-host-preflight-20260216-215534.log
+  - Smoke report artifact: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260216-215533.md
+  - Runtime validation log: /Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260216-215534.log
+
+### Validation Notes
+- Prototype runtime/app logic unchanged; updates are scripts/docs only.
+- Rerun on Flutter-enabled macOS host after installing Flutter/FVM + CocoaPods:
+  - scripts/run_ios_smoke_workflow.sh
+
 ## Cycle — 2026-02-16 21:41 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability

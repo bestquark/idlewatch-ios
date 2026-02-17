@@ -2,9 +2,9 @@
 
 Use this after runtime validation passes in a Flutter-enabled environment (supports both `flutter` and `fvm flutter`).
 
-Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs validation + appends preflight metadata + links artifacts into `docs/qa/ios-qa-log.md`).
+Preferred: run `scripts/run_ios_smoke_workflow.sh` first (it generates a report template + runs host preflight + runs validation + appends metadata + links artifacts into `docs/qa/ios-qa-log.md`).
 
-Manual alternative: run `scripts/prepare_ios_smoke_report.sh` and `scripts/validate_runtime.sh` separately.
+Manual alternative: run `scripts/prepare_ios_smoke_report.sh`, `scripts/preflight_ios_host.sh`, and `scripts/validate_runtime.sh` separately.
 
 ## Simulator/device smoke pass
 

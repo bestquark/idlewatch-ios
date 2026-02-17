@@ -7,6 +7,7 @@ PREP_SCRIPT="${ROOT_DIR}/scripts/prepare_ios_smoke_report.sh"
 VALIDATE_SCRIPT="${ROOT_DIR}/scripts/validate_runtime.sh"
 LINK_SCRIPT="${ROOT_DIR}/scripts/link_ios_smoke_artifacts.sh"
 RESOLVE_SCRIPT="${ROOT_DIR}/scripts/resolve_flutter_cmd.sh"
+PREFLIGHT_SCRIPT="${ROOT_DIR}/scripts/preflight_ios_host.sh"
 
 mkdir -p "${ARTIFACT_DIR}"
 
@@ -24,12 +25,28 @@ timestamp="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 flutter_version="not available"
 validation_status="pass"
 validation_log=""
+preflight_status="ready"
+preflight_log=""
 flutter_cmd="$(${RESOLVE_SCRIPT} 2>/dev/null || true)"
 
 if [[ -n "${flutter_cmd}" ]]; then
   flutter_version="$(eval "${flutter_cmd} --version" 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//')"
 else
   validation_status="blocked (flutter/fvm missing)"
+fi
+
+echo "[idlewatch-ios] Running iOS host preflight..."
+set +e
+preflight_output="$(${PREFLIGHT_SCRIPT} 2>&1)"
+preflight_code=$?
+set -e
+printf '%s\n' "${preflight_output}"
+if [[ ${preflight_code} -ne 0 ]]; then
+  preflight_status="blocked"
+fi
+preflight_log="$(printf '%s' "${preflight_output}" | sed -n 's/^Saved iOS host preflight log to: //p' | tail -n1)"
+if [[ -z "${preflight_log}" ]]; then
+  preflight_log="$(ls -t "${ARTIFACT_DIR}"/ios-host-preflight-*.log 2>/dev/null | head -n1 || true)"
 fi
 
 echo "[idlewatch-ios] Running runtime validation..."
@@ -57,6 +74,12 @@ fi
   echo "- Generated: ${timestamp}"
   echo "- Flutter command: ${flutter_cmd:-not available}"
   echo "- Flutter version: ${flutter_version}"
+  echo "- iOS host preflight status: ${preflight_status}"
+  if [[ -n "${preflight_log}" ]]; then
+    echo "- iOS host preflight log: ${preflight_log}"
+  else
+    echo "- iOS host preflight log: (not found)"
+  fi
   echo "- Runtime validation status: ${validation_status}"
   if [[ -n "${validation_log}" ]]; then
     echo "- Runtime validation log: ${validation_log}"

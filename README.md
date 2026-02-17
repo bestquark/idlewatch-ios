@@ -74,13 +74,15 @@ scripts/run_ios_smoke_workflow.sh
 
 This helper will:
 - generate a timestamped smoke report template,
+- run an iOS host preflight (`flutter/fvm`, `xcodebuild`, `xcrun simctl`, `pod`) and save a preflight artifact,
 - run validation via `flutter` (or `fvm flutter` when Flutter is managed through FVM),
-- auto-append preflight metadata + validation artifact path into the smoke report,
+- auto-append preflight metadata + validation artifact paths into the smoke report,
 - auto-link the latest smoke artifacts into `docs/qa/ios-qa-log.md`.
 
 Manual mode is still available:
 
 ```bash
+scripts/preflight_ios_host.sh
 scripts/validate_runtime.sh
 scripts/prepare_ios_smoke_report.sh
 ```
