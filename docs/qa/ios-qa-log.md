@@ -1,3 +1,45 @@
+## Cycle — 2026-02-17 04:31 America/Toronto
+_Auditor_: IdleWatch iOS QA Cron
+_Scope_: Keep UX/auth/onboarding/performance QA evidence fresh and prioritized while avoiding runtime changes
+_Method_: Docs-only backlog hygiene + acceptance-criteria review
+
+### Implementation Summary
+- ✅ Reviewed highest-priority cycle status and kept focus on release-grade evidence closure.
+- ✅ Confirmed that the latest iOS Smoke run remains green and recorded in prior entries.
+- ✅ Preserved app/runtime behavior (documentation updates only).
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — Keep remote iOS smoke closure evidence stable in QA log
+- **Previous**: ✅ Closed
+- **Now**: ✅ Closed
+- **Status note**: Latest `iOS Smoke` run on `main` remains green and is recorded at `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`.
+- **Acceptance criteria**:
+  - QA log continues to reference the latest green smoke run URL.
+  - No docs-only churn modifies or removes closure evidence.
+
+#### P2 — Maintain UX/auth/onboarding testability evidence in CI-backed artifacts
+- **Previous**: ✅ Closed
+- **Now**: ✅ Closed
+- **Reason**: Current pass still documents auth-gate + signing-in/retry helper behavior and loading-recovery flow in runtime/log artifacts.
+- **Current evidence references**:
+  - Runtime validation log: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/runtime-validation-20260217-041953.log`
+  - Smoke report: `/Users/luismantilla/.openclaw/workspace/idlewatch-ios/docs/qa/artifacts/ios-smoke-report-20260217-041952.md`
+- **Acceptance criteria**:
+  - CI-backed QA artifacts explicitly include onboarding/auth helper/retry behavior.
+  - Next cycle logs keep these references current when artifacts rotate.
+
+#### P3 — Refresh performance signal cadence for onboarding/first-render behavior
+- **Previous**: ⏳ Open
+- **Now**: ⏳ Open
+- **Reason**: Baseline timing/first-render quantification is still not available for older/low-end iOS targets.
+- **Acceptance criteria**:
+  - Capture first-render and onboarding-related timing on at least one slower iPhone profile.
+  - Record a pass/fail guard using concrete thresholds for loading delay and retry recovery latency.
+
+### Validation Notes
+- No app/runtime changes in this cycle.
+
 ## Cycle — 2026-02-17 04:28 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Execute highest-priority feasible backlog items while preserving prototype runnability
