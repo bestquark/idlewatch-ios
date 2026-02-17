@@ -10,6 +10,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 
+class IdleWatchPerformancePolicy {
+  static const int startupHelperSeconds = 10;
+  static const int startupRetrySeconds = 30;
+  static const int authHelperSeconds = 10;
+  static const int authRetrySeconds = 30;
+  static const int loadingHelperSeconds = 10;
+  static const int loadingRetrySeconds = 30;
+  static const int firstRenderBudgetMs = 3500;
+  static const int retryRecoveryBudgetMs = 30000;
+
+  static void logPerfSignal(String signal, int valueMs, {int? budgetMs}) {
+    final guard = budgetMs == null ? 'n/a' : '$valueMs/$budgetMs';
+    final status =
+        budgetMs == null ? 'observed' : (valueMs <= budgetMs ? 'pass' : 'warn');
+    // NOTE: logs intentionally lightweight so QA can scrape thresholds.
+    debugPrint(
+      '[idlewatch-perf] $signal=$valueMs status=$status'
+      '${budgetMs == null ? '' : ' budget=$guard'}',
+    );
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const IdleWatchApp());
@@ -37,6 +59,17 @@ class IdleWatchApp extends StatelessWidget {
 class AppBootstrapPage extends StatefulWidget {
   const AppBootstrapPage({super.key});
 
+  @visibleForTesting
+  static Widget buildBootstrapLoadingStateForTest({
+    required int elapsedSeconds,
+    VoidCallback? onRetry,
+  }) {
+    return _BootstrapLoadingState(
+      elapsedSeconds: elapsedSeconds,
+      onRetry: onRetry,
+    );
+  }
+
   @override
   State<AppBootstrapPage> createState() => _AppBootstrapPageState();
 }
@@ -46,6 +79,9 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
   String? _startupError;
   Timer? _waitTicker;
   int _waitSeconds = 0;
+  DateTime? _initializationStartAt;
+  bool _loggedStartupHint = false;
+  bool _loggedStartupRetryHint = false;
 
   @override
   void initState() {
@@ -60,6 +96,23 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
       setState(() {
         _waitSeconds += 1;
       });
+
+      if (!_loggedStartupHint &&
+          _waitSeconds == IdleWatchPerformancePolicy.startupHelperSeconds) {
+        _loggedStartupHint = true;
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'bootstrap_helper_delay_seconds',
+          _waitSeconds * 1000,
+        );
+      }
+      if (!_loggedStartupRetryHint &&
+          _waitSeconds == IdleWatchPerformancePolicy.startupRetrySeconds) {
+        _loggedStartupRetryHint = true;
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'bootstrap_retry_delay_seconds',
+          _waitSeconds * 1000,
+        );
+      }
     });
   }
 
@@ -69,6 +122,9 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
   }
 
   Future<void> _initialize() async {
+    _initializationStartAt = DateTime.now();
+    _loggedStartupHint = false;
+    _loggedStartupRetryHint = false;
     setState(() {
       _isInitializing = true;
       _startupError = null;
@@ -89,6 +145,13 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
     }
 
     if (mounted) {
+      if (_initializationStartAt != null) {
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'bootstrap_init_ms',
+          DateTime.now().difference(_initializationStartAt!).inMilliseconds,
+          budgetMs: IdleWatchPerformancePolicy.firstRenderBudgetMs,
+        );
+      }
       setState(() {
         _isInitializing = false;
       });
@@ -109,7 +172,10 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
         appBar: AppBar(title: const Text('Starting IdleWatch')),
         body: _BootstrapLoadingState(
           elapsedSeconds: _waitSeconds,
-          onRetry: _waitSeconds >= 30 ? _initialize : null,
+          onRetry:
+              _waitSeconds >= IdleWatchPerformancePolicy.startupRetrySeconds
+                  ? _initialize
+                  : null,
         ),
       );
     }
@@ -175,7 +241,7 @@ class AuthGatePage extends StatefulWidget {
 
     final widgets = <Widget>[];
 
-    if (authWaitSeconds >= 10) {
+    if (authWaitSeconds >= IdleWatchPerformancePolicy.authHelperSeconds) {
       widgets.addAll([
         const SizedBox(height: 10),
         Text(
@@ -185,7 +251,7 @@ class AuthGatePage extends StatefulWidget {
       ]);
     }
 
-    if (authWaitSeconds >= 30) {
+    if (authWaitSeconds >= IdleWatchPerformancePolicy.authRetrySeconds) {
       widgets.addAll([
         const SizedBox(height: 10),
         Text(
@@ -216,6 +282,9 @@ class _AuthGatePageState extends State<AuthGatePage> {
   String? _authError;
   Timer? _authWaitTicker;
   int _authWaitSeconds = 0;
+  DateTime? _signInStartedAt;
+  bool _loggedSigningInHint = false;
+  bool _loggedSigningInRetryHint = false;
 
   @override
   void initState() {
@@ -230,6 +299,24 @@ class _AuthGatePageState extends State<AuthGatePage> {
       setState(() {
         _authWaitSeconds += 1;
       });
+
+      if (!_loggedSigningInHint &&
+          _authWaitSeconds == IdleWatchPerformancePolicy.authHelperSeconds) {
+        _loggedSigningInHint = true;
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'auth_helper_delay_seconds',
+          _authWaitSeconds * 1000,
+        );
+      }
+      if (!_loggedSigningInRetryHint &&
+          _authWaitSeconds == IdleWatchPerformancePolicy.authRetrySeconds) {
+        _loggedSigningInRetryHint = true;
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'auth_retry_recovery_delay_seconds',
+          _authWaitSeconds * 1000,
+          budgetMs: IdleWatchPerformancePolicy.retryRecoveryBudgetMs,
+        );
+      }
     });
   }
 
@@ -239,6 +326,9 @@ class _AuthGatePageState extends State<AuthGatePage> {
   }
 
   Future<void> _signInAnonymously() async {
+    _signInStartedAt = DateTime.now();
+    _loggedSigningInHint = false;
+    _loggedSigningInRetryHint = false;
     setState(() {
       _isSigningIn = true;
       _authError = null;
@@ -255,6 +345,13 @@ class _AuthGatePageState extends State<AuthGatePage> {
     }
 
     if (mounted) {
+      if (_signInStartedAt != null) {
+        IdleWatchPerformancePolicy.logPerfSignal(
+          'auth_sign_in_ms',
+          DateTime.now().difference(_signInStartedAt!).inMilliseconds,
+          budgetMs: IdleWatchPerformancePolicy.retryRecoveryBudgetMs,
+        );
+      }
       setState(() {
         _isSigningIn = false;
       });
@@ -776,6 +873,11 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _hostSelectionReady = false;
   Timer? _loadingTicker;
   int _loadingSeconds = 0;
+  bool _loadingLoggedHelper = false;
+  bool _loadingLoggedRetry = false;
+  bool _firstRenderLogged = false;
+  final DateTime _dashboardStartAt = DateTime.now();
+  DateTime? _retryRequestedAt;
   int _retryNonce = 0;
   String? _activityFutureHost;
   int _activityFutureRetryNonce = -1;
@@ -833,6 +935,7 @@ class _DashboardPageState extends State<DashboardPage> {
       setState(() {
         _loadingSeconds += 1;
       });
+      _logLoadingSignals();
     });
   }
 
@@ -844,13 +947,56 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  void _logLoadingSignals() {
+    if (!_loadingLoggedHelper &&
+        _loadingSeconds == IdleWatchPerformancePolicy.loadingHelperSeconds) {
+      _loadingLoggedHelper = true;
+      IdleWatchPerformancePolicy.logPerfSignal(
+        'dashboard_loading_helper_delay_seconds',
+        _loadingSeconds * 1000,
+      );
+    }
+    if (!_loadingLoggedRetry &&
+        _loadingSeconds == IdleWatchPerformancePolicy.loadingRetrySeconds) {
+      _loadingLoggedRetry = true;
+      IdleWatchPerformancePolicy.logPerfSignal(
+        'dashboard_loading_retry_recovery_delay_seconds',
+        _loadingSeconds * 1000,
+        budgetMs: IdleWatchPerformancePolicy.retryRecoveryBudgetMs,
+      );
+    }
+  }
+
+  void _logFirstRenderSignals() {
+    if (!_firstRenderLogged) {
+      _firstRenderLogged = true;
+      IdleWatchPerformancePolicy.logPerfSignal(
+        'dashboard_first_render_ms',
+        DateTime.now().difference(_dashboardStartAt).inMilliseconds,
+        budgetMs: IdleWatchPerformancePolicy.firstRenderBudgetMs,
+      );
+    }
+
+    if (_retryRequestedAt != null) {
+      IdleWatchPerformancePolicy.logPerfSignal(
+        'dashboard_retry_recovery_ms',
+        DateTime.now().difference(_retryRequestedAt!).inMilliseconds,
+        budgetMs: IdleWatchPerformancePolicy.retryRecoveryBudgetMs,
+      );
+      _retryRequestedAt = null;
+    }
+  }
+
   void _retryStream() {
+    _retryRequestedAt = DateTime.now();
     setState(() {
       _retryNonce += 1;
       _loadingSeconds = 0;
       _activityBreakdownFuture = null;
       _activityFutureHost = null;
       _activityFutureRetryNonce = -1;
+      _loadingLoggedHelper = false;
+      _loadingLoggedRetry = false;
     });
   }
 
@@ -992,7 +1138,10 @@ class _DashboardPageState extends State<DashboardPage> {
             _ensureLoadingTicker();
             return _LoadingState(
               elapsedSeconds: _loadingSeconds,
-              onRetry: _loadingSeconds >= 30 ? _retryStream : null,
+              onRetry: _loadingSeconds >=
+                      IdleWatchPerformancePolicy.loadingRetrySeconds
+                  ? _retryStream
+                  : null,
             );
           }
 
@@ -1047,7 +1196,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 _ensureLoadingTicker();
                 return _LoadingState(
                   elapsedSeconds: _loadingSeconds,
-                  onRetry: _loadingSeconds >= 30 ? _retryStream : null,
+                  onRetry: _loadingSeconds >=
+                          IdleWatchPerformancePolicy.loadingRetrySeconds
+                      ? _retryStream
+                      : null,
                 );
               }
 
@@ -1069,6 +1221,8 @@ class _DashboardPageState extends State<DashboardPage> {
               final cpuSpots = series.cpuSpots;
               final memSpots = series.memSpots;
               final droppedInvalidPoints = series.droppedInvalidPoints;
+
+              _logFirstRenderSignals();
 
               if (!series.hasValidSeries) {
                 return _NoValidSeriesState(
@@ -1679,7 +1833,8 @@ class _BootstrapLoadingState extends StatelessWidget {
             const CircularProgressIndicator(),
             const SizedBox(height: 14),
             const Text('Initializing Firebase…'),
-            if (elapsedSeconds >= 10) ...[
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.startupHelperSeconds) ...[
               const SizedBox(height: 8),
               Text(
                 'Still initializing. This can happen on first launch or slower networks.',
@@ -1687,7 +1842,8 @@ class _BootstrapLoadingState extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
-            if (elapsedSeconds >= 30) ...[
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.startupRetrySeconds) ...[
               const SizedBox(height: 12),
               Text(
                 'If this keeps spinning, check Firebase config/plist setup, then retry.',
@@ -1728,7 +1884,8 @@ class _LoadingState extends StatelessWidget {
             const CircularProgressIndicator(),
             const SizedBox(height: 14),
             const Text('Connecting to metrics stream…'),
-            if (elapsedSeconds >= 10) ...[
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.loadingHelperSeconds) ...[
               const SizedBox(height: 8),
               Text(
                 'Still connecting. This can happen on slow or waking networks.',
@@ -1736,7 +1893,8 @@ class _LoadingState extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
-            if (elapsedSeconds >= 30) ...[
+            if (elapsedSeconds >=
+                IdleWatchPerformancePolicy.loadingRetrySeconds) ...[
               const SizedBox(height: 12),
               Text(
                 'If this takes too long, check network access and Firestore permissions.',

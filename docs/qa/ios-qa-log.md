@@ -1,3 +1,40 @@
+## Cycle — 2026-02-17 04:44 America/Toronto
+_Auditor_: IdleWatch iOS Implementer (cron)
+_Scope_: Implement highest-priority feasible P3 perf envelope item without changing runtime behavior.
+_Method_: Add deterministic timing policy + QA hooks + threshold tests; log perf signals at runtime.
+
+### Implementation Summary
+- ✅ Added a centralized `IdleWatchPerformancePolicy` with onboarding/loading/retry timing budgets.
+- ✅ Added lightweight production-safe perf signal logging for:
+  - bootstrap sign-in and auth progress delay milestones,
+  - first dashboard render latency,
+  - dashboard retry recovery latency.
+- ✅ Added `AppBootstrapPage.buildBootstrapLoadingStateForTest(...)` for deterministic bootstrap timing tests.
+- ✅ Added bootstrap threshold widget tests (pre-10s silence, helper at 10s, retry at 30s).
+- ✅ Kept app runtime behavior unchanged; added only instrumentation and test hooks.
+- ✅ Validation on local host:
+  - `flutter analyze` ✅
+  - `flutter test` ✅ (existing + new bootstrap timing tests)
+
+### Backlog Status
+
+#### P3 — Refresh performance signal cadence for onboarding/first-render behavior
+- **Previous**: ⏳ Open
+- **Now**: ✅ Closed
+- **Reason**: Timing policy + logs + tests now define concrete guardrails:
+  - Onboarding/setup helper threshold: 10s
+  - Retry-recovery visibility threshold: 30s
+  - Dashboard first-render guard target: 3500ms
+  - Dashboard retry-recovery guard target: 30000ms
+- **Evidence**:
+  - `flutter analyze` passed.
+  - `flutter test` passed with new `bootstrap onboarding timing policy` tests.
+  - Perf signal logging is now deterministic and can be consumed in iOS runtime logs/CI smoke artifacts for older-device profiling.
+
+### Validation Notes
+- Prototype runtime still unchanged (no feature behavior changes).
+- Next step: execute at least one slower/older iPhone smoke run and record concrete runtime `idlewatch-perf` values into the QA artifacts.
+
 ## Cycle — 2026-02-17 04:31 America/Toronto
 _Auditor_: IdleWatch iOS QA Cron
 _Scope_: Keep UX/auth/onboarding/performance QA evidence fresh and prioritized while avoiding runtime changes

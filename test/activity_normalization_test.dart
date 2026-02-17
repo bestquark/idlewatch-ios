@@ -15,8 +15,8 @@ void main() {
       expect(result['idleSeconds'], closeTo(57600, 0.001));
       expect(
         (result['cronjobSeconds']! +
-                result['subagentSeconds']! +
-                result['idleSeconds']!),
+            result['subagentSeconds']! +
+            result['idleSeconds']!),
         closeTo(86400, 0.001),
       );
     });
@@ -32,19 +32,21 @@ void main() {
       expect(result['idleSeconds'], closeTo(0, 0.01));
       expect(
         (result['cronjobSeconds']! +
-                result['subagentSeconds']! +
-                result['idleSeconds']!),
+            result['subagentSeconds']! +
+            result['idleSeconds']!),
         closeTo(86400, 0.01),
       );
     });
   });
 
   group('buildActivityBreakdownForTest', () {
-    test('uses dedicated activity dataset beyond chart-sized 240 sample window', () {
+    test('uses dedicated activity dataset beyond chart-sized 240 sample window',
+        () {
       final now = DateTime.utc(2026, 2, 16, 23, 0);
       final entries = List.generate(300, (index) {
         return {
-          'ts': now.subtract(Duration(minutes: index * 4)).millisecondsSinceEpoch,
+          'ts':
+              now.subtract(Duration(minutes: index * 4)).millisecondsSinceEpoch,
           'activitySource': 'cronjob',
           'activitySeconds': 60,
         };
@@ -63,7 +65,9 @@ void main() {
   });
 
   group('shouldContinueActivityWindowPagination', () {
-    test('continues when page is full and oldest sample is still inside 24h window', () {
+    test(
+        'continues when page is full and oldest sample is still inside 24h window',
+        () {
       final now = DateTime.utc(2026, 2, 16, 23, 0);
       final pageEntries = List.generate(500, (index) {
         return {
@@ -71,7 +75,8 @@ void main() {
         };
       });
 
-      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+      final shouldContinue =
+          DashboardPage.shouldContinueActivityWindowPagination(
         pageEntries: pageEntries,
         now: now,
         pageSize: 500,
@@ -84,11 +89,13 @@ void main() {
       final now = DateTime.utc(2026, 2, 16, 23, 0);
       final pageEntries = List.generate(500, (index) {
         return {
-          'ts': now.subtract(Duration(minutes: index * 3)).millisecondsSinceEpoch,
+          'ts':
+              now.subtract(Duration(minutes: index * 3)).millisecondsSinceEpoch,
         };
       });
 
-      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+      final shouldContinue =
+          DashboardPage.shouldContinueActivityWindowPagination(
         pageEntries: pageEntries,
         now: now,
         pageSize: 500,
@@ -105,7 +112,8 @@ void main() {
         };
       });
 
-      final shouldContinue = DashboardPage.shouldContinueActivityWindowPagination(
+      final shouldContinue =
+          DashboardPage.shouldContinueActivityWindowPagination(
         pageEntries: pageEntries,
         now: now,
         pageSize: 500,
@@ -116,7 +124,9 @@ void main() {
   });
 
   group('buildSeriesDataFromEntries', () {
-    test('uses first valid timestamp baseline even when first doc ts is malformed', () {
+    test(
+        'uses first valid timestamp baseline even when first doc ts is malformed',
+        () {
       final series = DashboardPage.buildSeriesDataFromEntries([
         {
           'ts': 'bad-ts',
@@ -146,7 +156,8 @@ void main() {
   });
 
   group('decideHostSelection', () {
-    test('does not persist fallback during bootstrap race before prefs load', () {
+    test('does not persist fallback during bootstrap race before prefs load',
+        () {
       final decision = DashboardPage.decideHostSelection(
         hosts: const ['host-a', 'host-b'],
         latestHost: 'host-b',
@@ -170,7 +181,9 @@ void main() {
       expect(decision.fallbackHostToPersist, isNull);
     });
 
-    test('uses temporary fallback without overwriting persisted host when missing from window', () {
+    test(
+        'uses temporary fallback without overwriting persisted host when missing from window',
+        () {
       final decision = DashboardPage.decideHostSelection(
         hosts: const ['host-a', 'host-b'],
         latestHost: 'host-b',
@@ -205,13 +218,15 @@ void main() {
       );
 
       expect(
-        find.text('Still signing in. This can take a moment if network or Firebase is slow.'),
+        find.text(
+            'Still signing in. This can take a moment if network or Firebase is slow.'),
         findsOneWidget,
       );
       expect(find.text('Retry sign-in'), findsNothing);
     });
 
-    testWidgets('retry sign-in CTA appears around 30 seconds and fires callback', (
+    testWidgets(
+        'retry sign-in CTA appears around 30 seconds and fires callback', (
       tester,
     ) async {
       var retryTapped = false;
@@ -256,7 +271,8 @@ void main() {
 
       expect(find.text('Connecting to metrics stream…'), findsOneWidget);
       expect(
-        find.text('Still connecting. This can happen on slow or waking networks.'),
+        find.text(
+            'Still connecting. This can happen on slow or waking networks.'),
         findsOneWidget,
       );
       expect(find.text('Retry connection'), findsNothing);
@@ -286,7 +302,8 @@ void main() {
       expect(retryTapped, isTrue);
     });
 
-    testWidgets('no valid series state exposes host selector and supports switching', (
+    testWidgets(
+        'no valid series state exposes host selector and supports switching', (
       tester,
     ) async {
       String? changedTo;
@@ -307,7 +324,8 @@ void main() {
       );
 
       expect(
-        find.text('Host "host-a" has samples, but no valid CPU/Memory numeric points to plot.'),
+        find.text(
+            'Host "host-a" has samples, but no valid CPU/Memory numeric points to plot.'),
         findsOneWidget,
       );
 
@@ -317,6 +335,63 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(changedTo, 'host-b');
+    });
+  });
+
+  group('bootstrap onboarding timing policy', () {
+    testWidgets('bootstrap helper/retry appear only after policy thresholds', (
+      tester,
+    ) async {
+      expect(
+        IdleWatchPerformancePolicy.startupHelperSeconds,
+        lessThan(IdleWatchPerformancePolicy.startupRetrySeconds),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppBootstrapPage.buildBootstrapLoadingStateForTest(
+              elapsedSeconds: 9,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Initializing Firebase…'), findsOneWidget);
+      expect(
+        find.text(
+          'Still initializing. This can happen on first launch or slower networks.',
+        ),
+        findsNothing,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppBootstrapPage.buildBootstrapLoadingStateForTest(
+              elapsedSeconds: 10,
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.text(
+          'Still initializing. This can happen on first launch or slower networks.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Retry setup'), findsNothing);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppBootstrapPage.buildBootstrapLoadingStateForTest(
+              elapsedSeconds: 30,
+              onRetry: null,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Retry setup'), findsOneWidget);
     });
   });
 }
