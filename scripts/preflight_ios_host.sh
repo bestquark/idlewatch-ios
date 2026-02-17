@@ -53,6 +53,26 @@ fi
 
 check_cmd "CocoaPods" pod
 
+if [[ ${status_ok} -ne 0 ]]; then
+  {
+    echo
+    echo "[idlewatch-ios] Suggested remediation (macOS):"
+    if [[ -z "${flutter_cmd}" ]]; then
+      echo "- Install Flutter SDK: brew install --cask flutter"
+      echo "- OR install FVM + Flutter channel: brew tap leoafarias/fvm && brew install fvm && fvm install stable && fvm global stable"
+    fi
+    if ! command -v pod >/dev/null 2>&1; then
+      echo "- Install CocoaPods: sudo gem install cocoapods"
+      echo "  (or: brew install cocoapods)"
+    fi
+    if ! command -v xcodebuild >/dev/null 2>&1 || ! command -v xcrun >/dev/null 2>&1; then
+      echo "- Install/finish Xcode tools: xcode-select --install"
+      echo "- If needed, accept Xcode license: sudo xcodebuild -license accept"
+    fi
+    echo "- Re-run preflight: scripts/preflight_ios_host.sh"
+  } | tee -a "${LOG_FILE}"
+fi
+
 {
   echo
   echo "[idlewatch-ios] iOS host preflight finished: $(date)"
