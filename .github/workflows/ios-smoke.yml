@@ -39,5 +39,6 @@ jobs:
           flutter test
 
       - name: iOS simulator build smoke
-        timeout-minutes: 20
+        # Build can take >20m on cold GitHub runners (notably first-time pod install).
+        timeout-minutes: 45
         run: flutter build ios --simulator --debug --no-codesign
