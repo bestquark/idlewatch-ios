@@ -8,6 +8,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'firebase_options.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const IdleWatchApp());
@@ -75,7 +77,13 @@ class _AppBootstrapPageState extends State<AppBootstrapPage> {
     _startWaitTicker();
 
     try {
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      } else {
+        Firebase.app();
+      }
     } on Exception catch (error) {
       _startupError = error.toString();
     }

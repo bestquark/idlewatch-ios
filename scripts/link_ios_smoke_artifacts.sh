@@ -75,7 +75,7 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
   - GitHub iOS smoke CI conclusion: **${ci_run_conclusion}**.
   ${ci_run_line}
 - **Acceptance criteria**:
-  - First green GitHub `iOS Smoke` run on `main` is recorded in QA log as closure evidence.
+  - First green GitHub iOS Smoke run on main is recorded in QA log as closure evidence.
 
 #### P2 — Missing fresh CI-backed UX/auth/onboarding/performance runtime evidence
 - **Previous**: ⏳ Open
