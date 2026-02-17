@@ -2,6 +2,38 @@
 
 > Full history archived at `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
 
+## Cycle — 2026-02-17 18:13 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `validate_runtime.sh` + prioritized backlog review
+
+### Summary
+- ⚠️ `validate_runtime.sh` reached host setup and stopped at `flutter pub get` with OS `SIGKILL` (resource constraints persist).
+- ✅ Prioritized UX/auth/onboarding/performance checklist re-reviewed against current code/tests; no new feasible implementation items identified.
+- ✅ Prototype behavior remains unchanged for this cycle.
+
+### Prioritized Checks, Findings, and Acceptance Criteria
+
+- **P1 — UX responsiveness (loading/error handling)**: ✅ Closed
+  - **Acceptance criteria**: Loading states must expose helper guidance by ~10s and retry path by ~30s under stall; no terminal dead-end spinner without actionable recovery.
+  - **Evidence**: Deterministic coverage from prior green baseline (`runtime-validation-20260217-105218.log`); no UI/runtime change detected in this cycle.
+
+- **P2 — Authentication UX/recovery**: ✅ Closed
+  - **Acceptance criteria**: Auth stall UI must provide helper/retry affordances at documented thresholds and allow retry without app restart.
+  - **Evidence**: Existing auth helper/retry tests remain green in last valid suite; no new auth-path changes since last full run.
+
+- **P3 — Onboarding + host onboarding recovery**: ✅ Closed
+  - **Acceptance criteria**: Onboarding should provide fallback guidance, preserve persisted host selection during temporary fallback, and expose host-switch path during invalid-series recovery.
+  - **Evidence**: Host/onboarding behavior unchanged; previously validated in runtime log `20260217-105218`.
+
+- **P4 — Performance guardrails**: ⚠️ Partial check blocked
+  - **Acceptance criteria**: Startup/auth/onboarding/dashboard startup thresholds remain within policy budgets; analyzer and tests pass in unconstrained runtime.
+  - **Evidence**: Full pass still last recorded at `runtime-validation-20260217-105218.log` (19/19 tests + clean analyzer). Current run blocked before analyze/test execution at `runtime-validation-20260217-181341.log`.
+
+### Note
+- New artifact created: `docs/qa/artifacts/runtime-validation-20260217-181341.log` (terminated at `flutter pub get` with SIGKILL).
+- Recommendation: rerun when host memory headroom improves, or run via external runner for this cycle before finalizing any performance deltas.
+
 ## Cycle — 2026-02-17 18:04 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
