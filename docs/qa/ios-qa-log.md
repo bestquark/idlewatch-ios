@@ -1,3 +1,49 @@
+## Cycle — 2026-02-17 18:56 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `flutter analyze`, `flutter test`, `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 19 tests passed**.
+- ✅ Runtime validation pass: `docs/qa/artifacts/runtime-validation-20260217-185638.log`.
+- ✅ No new regressions in prioritized UX/auth/onboarding/performance checks.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Loading helper copy appears by ~10s when stalled.
+  - Retry CTA appears by ~30s if state remains stalled.
+  - Users are never left in unrecoverable loading/error dead-ends.
+- **Current evidence**: Widget tests still pass (`Tests 12, 13, 14, 15`).
+
+#### P2 — Authentication UX/recovery
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Sign-in helper appears after prolonged auth wait (~10s).
+  - Retry control appears by ~30s and executes callback.
+  - Sign-in recovery returns to normal flow without requiring app restart.
+- **Current evidence**: Widget tests remain green (`Tests 10, 11`).
+
+#### P3 — Onboarding and host recovery stability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Bootstrap helper/retry states appear at documented timing thresholds.
+  - Temporary host fallback never overwrites persisted host preference.
+  - No-valid-series state exposes host selector and supports host switching.
+- **Current evidence**: Widget tests remain green (`Tests 7, 8, 9, 16, 17`).
+
+#### P4 — Performance guardrails
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - `flutter analyze` clean with no new issues.
+  - Full test suite passes on each scheduled cycle.
+  - Runtime validation completes within timeout and logs deterministic timing checks.
+- **Current evidence**: `docs/qa/artifacts/runtime-validation-20260217-185638.log` (analyze + test pass).
+
+
 ## Cycle — 2026-02-17 18:49 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
