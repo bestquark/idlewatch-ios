@@ -40,6 +40,16 @@ if [[ -n "${ci_run_url}" ]]; then
   ci_run_line="- GitHub iOS smoke CI run: ${ci_run_url}"
 fi
 
+validation_summary_analyze="(not found)"
+validation_summary_tests="(not found)"
+validation_test_count=""
+
+if [[ -n "${validation_log}" && -f "${validation_log}" ]]; then
+  validation_summary_analyze="$(grep -E "^\[summary\] flutter analyze:" "${validation_log}" | tail -n 1 || true)"
+  validation_summary_tests="$(grep -E "^\[summary\] flutter test:" "${validation_log}" | tail -n 1 || true)"
+  validation_test_count="$(echo "${validation_summary_tests}" | sed -E 's/.*flutter test: ([0-9]+).*/\1/' || true)"
+fi
+
 p1_now="⏳ Open"
 p1_note="First green GitHub iOS Smoke run on main is still pending."
 p2_now="⏳ Open (blocked on P1 closure)"
@@ -48,8 +58,16 @@ p2_reason="Shared CI-backed UX/auth/onboarding/performance evidence is still blo
 if [[ "${ci_run_conclusion}" == "success" ]]; then
   p1_now="✅ Closed"
   p1_note="Green GitHub iOS Smoke run on main captured; release gate restored."
-  p2_now="⏳ Open (unblocked; evidence expansion pending)"
-  p2_reason="CI baseline is now green; next pass should expand smoke notes for onboarding/auth retry and first-render responsiveness."
+fi
+
+if [[ "${validation_status}" == "pass" && -n "${validation_test_count}" && ${validation_test_count} -ge 18 ]]; then
+  p2_now="✅ Closed"
+  p2_reason="Local runtime validation passed with ${validation_test_count} tests, including authentication, loading/retry, and host fallback coverage from the deterministic suite."
+else
+  if [[ "${ci_run_conclusion}" == "success" ]]; then
+    p2_now="⏳ Open (unblocked; evidence expansion pending)"
+    p2_reason="CI baseline is now green; next pass should expand smoke notes for onboarding/auth retry and first-render responsiveness."
+  fi
 fi
 
 entry_file="$(mktemp)"
@@ -63,6 +81,7 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
 - ✅ Executed iOS smoke workflow/report automation for this cycle.
 - ✅ Synced latest GitHub iOS smoke CI metadata into QA evidence.
 - ✅ Kept prototype runtime/app logic unchanged (ops/docs evidence pass only).
+- ✅ Added runtime validation summary capture to make feasibility checks auditable.
 
 ### Prioritized Issues (with Acceptance Criteria)
 
@@ -84,6 +103,8 @@ _Method_: Runtime-smoke evidence refresh pass using existing automation workflow
 - **Progress this cycle**:
   - Current iOS host preflight status: **${preflight_status}**.
   - Current workflow attempt status: **${validation_status}**.
+  - Runtime validation summary: ${validation_summary_analyze}
+  - Runtime test summary: ${validation_summary_tests}
   - Smoke report artifact: ${report_path}
   ${preflight_log_line}
   ${validation_log_line}

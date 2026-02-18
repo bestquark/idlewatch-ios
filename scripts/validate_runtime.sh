@@ -72,6 +72,22 @@ run_flutter_step() {
   run_flutter_step "${FLUTTER_CMD} analyze" analyze
   run_flutter_step "${FLUTTER_CMD} test" test
   echo
+
+  analyze_summary="$(grep -E "No issues found!" "${LOG_FILE}" | tail -n 1 || true)"
+  test_count="$(grep -E '^00:00 \+[0-9]+: All tests passed!' "${LOG_FILE}" | sed -E 's/^00:00 \+([0-9]+): All tests passed!$/\1/' | tail -n 1 || true)"
+
+  if [[ -n "${analyze_summary}" ]]; then
+    echo "[summary] flutter analyze: ${analyze_summary}" | tee -a "${LOG_FILE}"
+  else
+    echo "[summary] flutter analyze: unknown" | tee -a "${LOG_FILE}"
+  fi
+
+  if [[ -n "${test_count}" ]]; then
+    echo "[summary] flutter test: ${test_count} tests passed." | tee -a "${LOG_FILE}"
+  else
+    echo "[summary] flutter test: unknown" | tee -a "${LOG_FILE}"
+  fi
+
   echo "[idlewatch-ios] Runtime validation finished: $(date)"
 } | tee -a "${LOG_FILE}"
 
