@@ -1,3 +1,36 @@
+## Cycle — 2026-02-17 22:16 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (prioritized UX / authentication / onboarding / performance)
+_Method_: `flutter pub get`, `flutter analyze`, `flutter test`, `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter pub get`: dependencies resolved.
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 18 tests passed**.
+- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260217-221655.log`.
+- ✅ No regressions observed in prioritized UX/auth/onboarding/performance checks.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Closed
+- **Current evidence**: Timing/recovery tests 12-15 passing. Analyze clean.
+
+#### P2 — Authentication UX/recovery
+- **Status**: ✅ Closed
+- **Current evidence**: Auth helper/retry tests 10-11 passing.
+
+#### P3 — Onboarding and host recovery stability
+- **Status**: ✅ Closed
+- **Current evidence**: Onboarding/host tests 7-9, 16-17 passing.
+
+#### P4 — Performance guardrails/startup reliability
+- **Status**: ✅ Closed
+- **Current evidence**: Full suite green. Fresh runtime artifact generated.
+
+### Validation notes
+- No code changes this cycle; docs-only update.
+
 ## Cycle — 2026-02-17 22:04 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (prioritized UX / authentication / onboarding / performance)
