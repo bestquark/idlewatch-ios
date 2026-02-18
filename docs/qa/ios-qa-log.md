@@ -49,7 +49,7 @@ _Method_: `flutter pub get`, `flutter analyze`, `flutter test`, `scripts/validat
   - Runtime validation script completes end-to-end and emits artifact.
   - No startup/auth/onboarding timing regressions in automated checks.
 - **Current evidence**:
-  - `scripts/validate_runtime.sh` completed in under a second scale after tool bootstrap.
+  - `scripts/validate_runtime.sh` completed successfully after tool bootstrap.
   - Fresh runtime artifact generated: `docs/qa/artifacts/runtime-validation-20260217-205515.log`.
 
 ### Validation notes
