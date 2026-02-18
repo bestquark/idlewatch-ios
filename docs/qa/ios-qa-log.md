@@ -1,3 +1,49 @@
+## Cycle — 2026-02-17 19:05 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
+_Method_: `flutter analyze`, `flutter test`, `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter analyze`: **No issues found**.
+- ✅ `flutter test`: **All 19 tests passed**.
+- ✅ Runtime validation pass: `docs/qa/artifacts/runtime-validation-20260217-190554.log`.
+- ✅ No regressions detected in prioritized UX/auth/onboarding/performance checks.
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Loading/helper UI appears by ~10s for stalled states.
+  - Retry CTA appears by ~30s if stall persists.
+  - No terminal dead-end loading state without a visible recovery action.
+- **Current evidence**: Existing timing and recovery widget tests remain green (`Tests 12, 13, 14, 15`).
+
+#### P2 — Authentication UX/recovery
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Sign-in helper appears after prolonged auth wait (~10s).
+  - Retry CTA appears by ~30s and executes callback.
+  - Successful retry/recovery returns to normal app flow without app restart.
+- **Current evidence**: Existing auth helper/retry widget tests remain green (`Tests 10, 11`).
+
+#### P3 — Onboarding and host recovery stability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Bootstrap helper/retry behavior follows policy thresholds.
+  - Temporary host fallback never overwrites persisted host preference.
+  - No-valid-series flow exposes host selector and supports host switching.
+- **Current evidence**: Deterministic tests for host/onboarding flows remain green (`Tests 7, 8, 9, 16, 17`).
+
+#### P4 — Performance guardrails
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Analyzer and unit tests continue to pass on each cycle.
+  - Runtime script completes cleanly and records checks.
+  - No new runtime regressions in startup/auth/onboarding performance markers.
+- **Current evidence**: `flutter analyze`, `flutter test`, and runtime validation for this cycle passed.
+
+
 ## Cycle — 2026-02-17 18:56 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (UX, Authentication, Onboarding, Performance)
