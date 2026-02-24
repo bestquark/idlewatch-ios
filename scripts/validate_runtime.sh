@@ -4,7 +4,7 @@ set -o pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="${ROOT_DIR}/docs/qa/artifacts"
-LOG_FILE="${LOG_DIR}/runtime-validation-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${LOG_DIR}/runtime-validation-$(date +%Y%m%d-%H%M%S)-$$.log"
 RESOLVE_SCRIPT="${ROOT_DIR}/scripts/resolve_flutter_cmd.sh"
 
 mkdir -p "${LOG_DIR}"
@@ -30,7 +30,7 @@ run_flutter_step() {
     timeout_cmd="timeout ${FLUTTER_STEP_TIMEOUT_SECONDS}s"
   fi
 
-  echo "[step] ${step_name}: ${timeout_cmd:+${timeout_cmd} }${step_cmd}" | tee -a "${LOG_FILE}"
+  echo "[step] ${step_name}: ${timeout_cmd:+${timeout_cmd} }${step_cmd}"
 
   set +e
   if [[ -n "${timeout_cmd}" ]]; then
@@ -44,9 +44,9 @@ run_flutter_step() {
 
   if [[ ${rc} -ne 0 ]]; then
     if [[ -n "${timeout_cmd}" && ${rc} -eq 124 ]]; then
-      echo "[error] ${step_name} exceeded timeout of ${FLUTTER_STEP_TIMEOUT_SECONDS}s." | tee -a "${LOG_FILE}"
+      echo "[error] ${step_name} exceeded timeout of ${FLUTTER_STEP_TIMEOUT_SECONDS}s."
     else
-      echo "[error] ${step_name} failed with exit code ${rc}." | tee -a "${LOG_FILE}"
+      echo "[error] ${step_name} failed with exit code ${rc}."
     fi
     return ${rc}
   fi
@@ -73,19 +73,19 @@ run_flutter_step() {
   run_flutter_step "${FLUTTER_CMD} test" test
   echo
 
-  analyze_summary="$(grep -E "No issues found!" "${LOG_FILE}" | tail -n 1 || true)"
-  test_count="$(grep -E '^00:00 \+[0-9]+: All tests passed!' "${LOG_FILE}" | sed -E 's/^00:00 \+([0-9]+): All tests passed!$/\1/' | tail -n 1 || true)"
+  analyze_summary="$(grep -E "No issues found!?" "${LOG_FILE}" | tail -n 1 || true)"
+  test_count="$(grep -E 'All tests passed' "${LOG_FILE}" | tail -n 1 | sed -E 's/.*\+([0-9]+): All tests passed!?$/\1/' | tr -d '[:space:]' || true)"
 
   if [[ -n "${analyze_summary}" ]]; then
-    echo "[summary] flutter analyze: ${analyze_summary}" | tee -a "${LOG_FILE}"
+    echo "[summary] flutter analyze: ${analyze_summary}"
   else
-    echo "[summary] flutter analyze: unknown" | tee -a "${LOG_FILE}"
+    echo "[summary] flutter analyze: unknown"
   fi
 
   if [[ -n "${test_count}" ]]; then
-    echo "[summary] flutter test: ${test_count} tests passed." | tee -a "${LOG_FILE}"
+    echo "[summary] flutter test: ${test_count} tests passed."
   else
-    echo "[summary] flutter test: unknown" | tee -a "${LOG_FILE}"
+    echo "[summary] flutter test: unknown"
   fi
 
   echo "[idlewatch-ios] Runtime validation finished: $(date)"
