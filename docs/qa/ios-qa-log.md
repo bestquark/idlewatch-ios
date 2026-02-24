@@ -1,13 +1,13 @@
-## Cycle — 2026-02-24 18:50 America/Toronto
+## Cycle — 2026-02-24 18:56 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled implementation cycle (highest-priority feasible backlog)
 _Method_: `scripts/validate_runtime.sh`
 
 ### Summary
 - ✅ `flutter pub get`: dependencies resolved.
-- ✅ `flutter analyze`: **No issues found** (1.3s).
+- ✅ `flutter analyze`: **No issues found** (1.2s).
 - ✅ `flutter test`: **All 18 tests passed**.
-- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260224-185041-79157.log`.
+- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260224-185619-79841.log`.
 - ✅ No implementation-feasible backlog items identified this cycle; all priorities remain closed.
 - ✅ Prototype runtime/app logic unchanged.
 
@@ -17,53 +17,6 @@ _Method_: `scripts/validate_runtime.sh`
 - **P3 — Onboarding and host recovery stability**: ✅ Closed
 - **P4 — Performance & startup reliability**: ✅ Closed
 - **P5 — Validation workflow resiliency**: ✅ Closed
-
-### Prioritized Issues (with Acceptance Criteria)
-
-#### P1 — UX responsiveness in loading/error states
-- **Status**: ✅ Closed
-- **Acceptance criteria**:
-  - Loading helper UI appears by ~10 seconds during stalled loading/waiting states.
-  - Retry CTA appears by ~30 seconds and executes callback without reload.
-  - No dead-end UI states when async operations stall; users always get a clear recovery path.
-- **Current evidence**:
-  - Deterministic timing/recovery tests passed (`Tests 12, 13, 14, 15`).
-
-#### P2 — Authentication UX/recovery
-- **Status**: ✅ Closed
-- **Acceptance criteria**:
-  - Sign-in helper appears around ~10 seconds during prolonged auth wait states.
-  - Retry sign-in CTA appears around ~30 seconds and triggers `startSignIn`.
-  - Auth recovery returns user to active flow without app restart.
-- **Current evidence**:
-  - Auth recovery tests passed (`Tests 10, 11`).
-
-#### P3 — Onboarding and host recovery stability
-- **Status**: ✅ Closed
-- **Acceptance criteria**:
-  - Onboarding helper and retry behavior follows documented timing policy.
-  - Temporary host fallback never overwrites persisted user host preference.
-  - Invalid-series / host outage states continue to expose host selector and allow switching.
-- **Current evidence**:
-  - Host selection and onboarding tests passed (`Tests 7, 8, 9, 16, 17`).
-
-#### P4 — Performance & startup reliability
-- **Status**: ✅ Closed
-- **Acceptance criteria**:
-  - Static analysis and full test suite pass on each scheduled cycle.
-  - Runtime validation pipeline runs end-to-end and produces fresh artifact.
-  - No startup/auth/onboarding timing regressions in automated checks.
-- **Current evidence**:
-  - `scripts/validate_runtime.sh` completed successfully and produced a fresh artifact.
-
-#### P5 — Validation workflow resiliency
-- **Status**: ✅ Closed
-- **Acceptance criteria**:
-  - Validation logs are consistently generated per cycle and include step-level completion.
-  - No regressions are introduced by validation tooling.
-  - If failures occur, failures are triaged and either fixed or documented with explicit follow-up.
-- **Current evidence**:
-  - This cycle produced a fresh log artifact and no failures.
 
 ### Validation Notes
 - Continued stable-cycle results with no functional changes needed.
