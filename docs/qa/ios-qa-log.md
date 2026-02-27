@@ -1,3 +1,63 @@
+## Cycle — 2026-02-27 18:06 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled implementation cycle (highest-priority feasible backlog)
+_Method_: `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter pub get`: dependencies resolved.
+- ✅ `flutter analyze`: **No issues found** (2.1s).
+- ✅ `flutter test`: **All 18 tests passed**.
+- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260227-180656-38424.log`.
+- ✅ No implementation-feasible backlog items identified this cycle; all priorities remain closed.
+- ✅ Prototype runtime/app logic unchanged.
+
+### Prioritized Issues Status
+- **P1 — UX responsiveness in loading/error states**: ✅ Closed
+- **P2 — Authentication UX/recovery**: ✅ Closed
+- **P3 — Onboarding and host recovery stability**: ✅ Closed
+- **P4 — Performance & startup reliability**: ✅ Closed
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Loading helper UI appears by ~10 seconds during stalled loading/waiting states.
+  - Retry CTA appears by ~30 seconds and executes callback without app restart.
+  - No dead-end UI states when async operations stall; users always get a clear recovery path.
+- **Current evidence**:
+  - Deterministic loading/retry timing tests remain passing (`Tests 12, 13, 14, 15`).
+
+#### P2 — Authentication UX/recovery
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Sign-in helper appears around ~10 seconds during prolonged auth wait states.
+  - Retry sign-in CTA appears around ~30 seconds and triggers `startSignIn`.
+  - Auth recovery returns user to active flow without app restart.
+- **Current evidence**:
+  - Auth recovery tests remain passing (`Tests 10, 11`).
+
+#### P3 — Onboarding and host recovery stability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Onboarding helper and retry behavior follows documented timing policy.
+  - Temporary host fallback never overwrites persisted user host preference.
+  - Invalid-series/host outage states continue to expose host selector and allow switching.
+- **Current evidence**:
+  - Host selection and onboarding tests remain passing (`Tests 7, 8, 9, 16, 17`).
+
+#### P4 — Performance & startup reliability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Static analysis and full test suite pass on each scheduled cycle.
+  - Runtime validation pipeline completes end-to-end and produces fresh artifacts.
+  - No startup/auth/onboarding timing regressions in automated checks.
+- **Current evidence**:
+  - `scripts/validate_runtime.sh` completed successfully and produced a fresh artifact in this cycle.
+
+### Validation Notes
+- No functional regressions detected; backlog unchanged and all priorities remain closed.
+
 ## Cycle — 2026-02-27 17:58 America/Toronto
 _Auditor_: IdleWatch iOS Implementer (cron)
 _Scope_: Scheduled implementation cycle (highest-priority feasible backlog)
