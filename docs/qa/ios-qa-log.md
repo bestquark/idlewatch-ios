@@ -7760,3 +7760,22 @@ _Method_: Flutter analyze + Flutter test + backlog closure review.
 - Perf capture (deterministic harness): `docs/qa/artifacts/ios-perf-capture-20260217-050930.md`
 - CI smoke evidence: `https://github.com/bestquark/idlewatch-ios/actions/runs/22092064460`
 - Full QA history: `docs/qa/artifacts/ios-qa-log-archive-20260217-1000.md`
+---
+
+## Cycle — 2026-02-27 08:25 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle
+_Method_: `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ `flutter analyze`: **No issues found** (1.3s).
+- ✅ `flutter test`: **All 18 tests passed**.
+- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260227-082532-1433.log`.
+- ✅ No code changes since last cycle. All priorities remain closed.
+
+### Prioritized Issues Status
+- **P1 — UX responsiveness in loading/error states**: ✅ Closed
+- **P2 — Authentication UX/recovery**: ✅ Closed
+- **P3 — Onboarding and host recovery stability**: ✅ Closed
+- **P4 — Performance & startup reliability**: ✅ Closed
+- **P5 — Validation workflow resiliency**: ✅ Closed
