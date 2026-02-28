@@ -1,3 +1,77 @@
+## Cycle — 2026-02-28 05:42 America/Toronto
+_Auditor_: IdleWatch iOS QA Cycle Agent (cron)
+_Scope_: Scheduled iOS QA cycle (prioritized UX / authentication / onboarding / performance)
+_Method_: `scripts/validate_runtime.sh`
+
+### Summary
+- ✅ Ran runtime validation successfully.
+- ✅ `flutter pub get`: dependencies resolved.
+- ✅ `flutter analyze`: **No issues found** (1.3s).
+- ✅ `flutter test`: **18 tests passed**.
+- ✅ Runtime validation artifact: `docs/qa/artifacts/runtime-validation-20260228-054256-31925.log`.
+- ✅ No functional regressions detected.
+- ✅ No implementation-feasible backlog items identified in this cycle.
+
+### Prioritized Issues Status
+- **P1 — UX responsiveness in loading/error states**: ✅ Closed
+- **P2 — Authentication UX/recovery**: ✅ Closed
+- **P3 — Onboarding and host recovery stability**: ✅ Closed
+- **P4 — Performance & startup reliability**: ✅ Closed
+- **P5 — Validation workflow resiliency**: ✅ Closed
+
+### Prioritized Issues (with Acceptance Criteria)
+
+#### P1 — UX responsiveness in loading/error states
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Loading/helper UI appears when startup/auth/network waits exceed ~10 seconds.
+  - Retry CTA appears by ~30 seconds and supports recovery without app restart.
+  - Stalled async states provide recoverable paths and do not dead-end users.
+- **Current evidence**:
+  - Deterministic loading/retry timing checks remain green (`Tests 12–15` in runtime suite).
+
+#### P2 — Authentication UX/recovery
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Sign-in helper appears after prolonged auth wait (~10 seconds).
+  - Retry sign-in CTA appears by ~30 seconds and triggers recovery callback.
+  - Recovery returns users to active auth flow without session reset.
+- **Current evidence**:
+  - Auth recovery checks remain green (`Tests 10–11` in runtime suite).
+
+#### P3 — Onboarding and host recovery stability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - Onboarding helper and host fallback remain discoverable and actionable.
+  - Temporary host fallback does not overwrite persisted host preferences.
+  - Invalid/outage host states keep host selector accessible.
+- **Current evidence**:
+  - Host/onboarding recovery checks remain green (`Tests 7, 8, 9, 16, 17` in runtime suite).
+
+#### P4 — Performance & startup reliability
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - `flutter analyze` and deterministic test suite pass every cycle.
+  - Runtime validation completes end-to-end with artifact capture.
+  - Startup/auth/onboarding behavior remains stable over cycles.
+- **Current evidence**:
+  - `flutter analyze`: **No issues found**.
+  - `flutter test`: **18 tests passed**.
+  - Runtime validation artifact generated and archived in this run.
+
+#### P5 — Validation workflow resiliency
+- **Status**: ✅ Closed
+- **Acceptance criteria**:
+  - QA cadence executes on scheduled interval with evidence logs.
+  - Runtime artifacts are uniquely named, traceable, and retained.
+  - Failures trigger explicit follow-up tracking before closure.
+- **Current evidence**:
+  - End-to-end cycle execution succeeded and archived artifact in this run.
+
+### Validation Notes
+- No functional regressions detected.
+- Existing backlog remains fully stable and closed.
+
 ## Cycle — 2026-02-28 05:38 America/Toronto
 _Auditor_: IdleWatch iOS QA Cycle Agent (cron)
 _Scope_: Scheduled iOS QA cycle (prioritized UX / authentication / onboarding / performance)
